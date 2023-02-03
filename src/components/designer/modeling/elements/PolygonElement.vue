@@ -3,10 +3,16 @@
         <v-regular-polygon
                 :config="config"
                 @dragstart="handleDragStart"
-                @transformend="movingElement"
+                @transformend="handleTransformEnd"
                 @dblclick="openPanel"
                 @contextMenu="openMenu"
         ></v-regular-polygon>
+        <v-text
+                :config="textConfig"
+                @dragstart="handleDragStart"
+                @dblclick="openPanel"
+                @contextMenu="openMenu"
+        ></v-text>
     </div>
 </template>
 
@@ -16,8 +22,6 @@
     export default {
         mixins: [ModelElement],
         name: 'polygon-element',
-        components: {
-        },
         data() {
             return {
             }

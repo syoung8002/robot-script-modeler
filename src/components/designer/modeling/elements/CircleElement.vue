@@ -3,28 +3,25 @@
         <v-circle
                 :config="config"
                 @dragstart="handleDragStart"
-                @transformend="movingElement"
+                @transformend="handleTransformEnd"
                 @dblclick="openPanel"
                 @contextMenu="openMenu"
         ></v-circle>
-
-        <model-panel
-                v-if="isOpenPanel"
-                :value="config"
-        ></model-panel>
+        <v-text
+                :config="textConfig"
+                @dragstart="handleDragStart"
+                @dblclick="openPanel"
+                @contextMenu="openMenu"
+        ></v-text>
     </div>
 </template>
 
 <script>
     import ModelElement from '../ModelElement'
-    import ModelPanel from '../ModelPanel'
 
     export default {
         mixins: [ModelElement],
         name: 'circle-element',
-        components: {
-            'model-panel': ModelPanel
-        },
         data() {
             return {
             }

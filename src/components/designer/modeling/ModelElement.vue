@@ -12,8 +12,26 @@
         data() {
             return {
                 value: {},
-                textConfig: {},
                 modelCanvasComponent: null,
+            }
+        },
+        computed: {
+            textConfig() {
+                let obj = {
+                    elementId: this.config.id,
+                    text: this.config.name,
+                    x: this.config.x,
+                    y: this.config.y,
+                    width: this.config.width ? this.config.width : 100,
+                    fontSize: 20,
+                    fill: 'black',
+                    align: 'center',
+                    draggable: true,
+                }
+                if(this.config.type.includes('rect')) {
+                    obj.y += this.config.height/2 - 10
+                }
+                return obj
             }
         },
         created() {
@@ -28,7 +46,6 @@
                 handler(newVal, oldVal) {
                     if(newVal) {
                         newVal.id = this.config.id
-                        this.setTextConfig(newVal)
                         this.$emit('updateConfig', newVal)
                     }
                 }
@@ -40,7 +57,11 @@
             },
             openMenu(e) {
                 e.evt.preventDefault()
-                this.$emit('openMenu', this.config)
+                const obj = {
+                    event: e,
+                    config: this.config
+                }
+                this.$emit('openMenu', obj)
             },
             handleDragStart(e) {
                 e.target.on('dragmove', () => {
@@ -56,17 +77,22 @@
                 // me.value.width = newWidth
                 // me.value.height = newHeight
 
-                me.updateRelation(me.value)
+                me.movingRelation(me.value)
             },
-            updateRelation(val) {
-                this.$emit('updateRelation', val)
+            movingRelation(val) {
+                this.$emit('movingRelation', val)
             },
             movingElement(e) {
                 const me = this
 
                 if (e.target instanceof Konva.Text) {
                     me.value.x = Math.floor(e.target.x())
-                    me.value.y = Math.floor(e.target.y() - me.config.height/2 + me.textConfig.fontSize/2)
+                    
+                    if(this.config.type.includes('rect')) {
+                        me.value.y = Math.floor(e.target.y() - me.config.height/2 + 10)
+                    } else {
+                        me.value.y = Math.floor(e.target.y())
+                    }
                 } else {
                     me.value.x = Math.floor(e.target.x())
                     me.value.y = Math.floor(e.target.y())
@@ -75,15 +101,7 @@
                     me.value.scaleY = e.target.scaleY()
                 }
 
-                me.updateRelation(me.value)
-            },
-            setTextConfig(val) {
-                const me = this
-                if (val.name) {
-                    me.textConfig.text = val.name
-                }
-                me.textConfig.x = val.x
-                me.textConfig.y = val.y + me.config.height/2 - me.textConfig.fontSize/2
+                me.movingRelation(me.value)
             },
             getComponent(componentName) {
                 let component = null

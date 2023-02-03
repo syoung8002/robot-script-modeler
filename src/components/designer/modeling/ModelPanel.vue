@@ -7,11 +7,11 @@
         <template v-slot:prepend>
             <v-list-item two-line>
                 <v-list-item-avatar>
-                    <v-icon>mdi-rectangle</v-icon>
+                    <v-icon>{{ elementInfo.icon }}</v-icon>
                 </v-list-item-avatar>
 
                 <v-list-item-content>
-                    <v-list-item-title>Rectangle</v-list-item-title>
+                    <v-list-item-title>{{ elementInfo.type }}</v-list-item-title>
                 </v-list-item-content>
             </v-list-item>
         </template>
@@ -49,6 +49,41 @@
                 },
                 set(newVal) {
                     this.$emit(newVal, 'update');
+                }
+            },
+            elementInfo() {
+                const me = this
+                if(me.value.type.includes('rect')) {
+                    return {
+                        type: 'Rectangle',
+                        icon: 'mdi-square'
+                    }
+                }
+                if(me.value.type.includes('circle')) {
+                    return {
+                        type: 'Circle',
+                        icon: 'mdi-circle'
+                    }
+                }
+                if(me.value.type.includes('polygon')) {
+                    if(me.value.sides === 3) {
+                        return {
+                            type: 'Triangle',
+                            icon: 'mdi-triangle'
+                        }
+                    }
+                    if(me.value.sides === 5) {
+                        return {
+                            type: 'Pentagon',
+                            icon: 'mdi-pentagon'
+                        }
+                    }
+                    if(me.value.sides === 6) {
+                        return {
+                            type: 'Hexagon',
+                            icon: 'mdi-hexagon'
+                        }
+                    }
                 }
             }
         },
