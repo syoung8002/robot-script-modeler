@@ -15,8 +15,8 @@
                             @mousedown="handleStageMouseDown"
                             @movingRelation="movingRelation"
                             @updateConfig="updateConfig"
-                            @openPanel="openPanel"
-                            @openMenu="openMenu"
+                            @handleModelPanel="handleModelPanel"
+                            @handleContextMenu="handleContextMenu"
                     ></component>
                 </div>
 
@@ -54,7 +54,7 @@
                 max-width="300"
         >
             <v-list>
-                <v-btn text @click="addRelation($event, selectedShape)">
+                <v-btn text @click="addRelation(selectedShapeId)">
                     Add Connection
                 </v-btn>
             </v-list>
@@ -74,7 +74,6 @@
 
     const WIDTH = window.innerWidth;
     const HEIGHT = window.innerHeight;
-    const GUIDELINE_OFFSET = 5;
 
     export default {
         name: 'model-canvas',
@@ -95,6 +94,12 @@
                         height: 100,
                         component: 'rect-element',
                         icon: 'mdi-square-outline',
+                    },
+                    {
+                        name: 'circle',
+                        radius: 60,
+                        component: 'circle-element',
+                        icon: 'mdi-circle-outline',
                     },
                 ],
                 elements: [
@@ -179,15 +184,13 @@
                 drawningLine: false,
                 // shape
                 selectedShapeId: '',
-                selectedShapeName: '',
                 selectedShape: null,
                 // panel
                 isOpenPanel: false,
                 // context menu
                 isOpenMenu: false,
                 menuStyle: {},
-                // swap location
-                swapLocation: {},
+
             };
         },
         created() {},
@@ -195,6 +198,7 @@
             const me = this;
             const layer = me.$refs.layer.getNode();
 
+            /** Drag Event */
             layer.on('dragstart', function (event) {
                 let target = event.target;
                 if (target.name() === 'relation') {
@@ -207,13 +211,8 @@
                     const node = target['_nodes'];
                     target = node[0];
                 }
-                console.log(target)                
-                me.swapLocation = {
-                    x: target.getClientRect().x,
-                    y: target.getClientRect().y
-                }
+                
             })
-            
             layer.on('dragmove', function (event) {
                 let target = event.target;
                 if (target.name() === 'relation') {
@@ -227,11 +226,10 @@
                     target = node[0];
                 }
 
-                me.detectCollision(target);
+                me.detectedCollision(target)
             })
-
             layer.on('dragend', function (event) {
-                // layer.find('.guid-line').forEach((l) => l.destroy());
+                layer.find('.guid-line').forEach((l) => l.destroy());
 
                 let target = event.target;
                 if (target.name() === 'relation') {
@@ -244,9 +242,6 @@
                     const node = target['_nodes'];
                     target = node[0];
                 }
-
-                me.swapLocation = {}
-                
             })
         },
         methods: {
@@ -260,18 +255,35 @@
                 return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
                     s4() + '-' + s4() + s4() + s4();
             },
-            openPanel(val) {
+            handleModelPanel(val) {
                 const me = this
-                me.selectedShape = me.elements.find((r) => r.id === val.id);
-                me.isOpenPanel = true
+                me.isOpenPanel = false
+
+                if (val) {
+                    me.selectedShape = me.elements.find((r) => r.id === val.id);
+                    me.selectedShapeId = val.id
+                    me.isOpenPanel = true
+                } {
+                    // me.selectedShape = null
+                    me.selectedShapeId = ''
+                }
             },
-            openMenu(val) {
+            handleContextMenu(val) {
                 const me = this
-                const pos = val.event.target.getStage().getPointerPosition();
-                me.menuStyle.left = pos.x + 'px'
-                me.menuStyle.top = pos.y + 'px'
-                me.selectedShape = me.elements.find((r) => r.id === val.config.id)
-                me.isOpenMenu = true
+                me.isOpenMenu = false
+
+                if (val) {
+                    const pos = val.event.target.getStage().getPointerPosition();
+                    me.menuStyle.left = pos.x + 'px'
+                    me.menuStyle.top = pos.y + 'px'
+                    me.selectedShape = me.elements.find((r) => r.id === val.config.id)
+                    me.selectedShapeId = val.config.id
+                    me.isOpenMenu = true
+                } else {
+                    me.menuStyle = {}
+                    // me.selectedShape = null
+                    me.selectedShapeId = ''
+                }
             },
             updateConfig(val) {
                 const me = this
@@ -317,13 +329,6 @@
             handleStageMouseDown(event) {
                 const me = this
 
-                // relation
-                if(me.drawningLine) {
-                    me.addRelation(event)
-                    return
-                }
-
-                // clicked on stage - clear selection
                 if (event.target !== event.target.getStage()) {
                     const clickedOnTransformer = event.target.getParent().className === 'Transformer';
                     if (clickedOnTransformer) {
@@ -337,15 +342,16 @@
                         elId = event.target.id();
                     }
                     me.selectedShapeId = elId;
-                    me.updateTransformer();
-                    return;
-                }
 
-                me.isOpenPanel = false
-                me.isOpenMenu = false
-                me.selectedShape = null
-                me.selectedShapeId = ''
-                me.updateTransformer();
+                    // relation
+                    if(me.drawningLine) {
+                        me.addRelation(elId)
+                    }
+                }
+                me.updateTransformer()
+
+                me.handleModelPanel()
+                me.handleContextMenu()
             },
             handleStageMouseMove(event) {
                 const me = this
@@ -357,34 +363,25 @@
                 }
             },
             updateTransformer() {
+                const me = this
                 const transformerNode = this.$refs.transformer.getNode();
                 const stage = transformerNode.getStage();
-                const { selectedShapeId } = this;
 
-                const selectedNode = stage.findOne('#' + selectedShapeId);
-                // do nothing if selected node is already attached
+                const selectedNode = stage.findOne('#' + me.selectedShapeId);
                 if (selectedNode === transformerNode.node()) {
                     return;
                 }
 
                 if (selectedNode instanceof Konva.Layer || !selectedNode) {
-                    // remove transformer
                     transformerNode.nodes([]);
                 } else {
-                    // attach to another node
                     transformerNode.nodes([selectedNode]);
                 }
             },
-            detectCollision(target) {
+            detectedCollision(target) {
                 const me = this
                 const layer = me.$refs.layer.getNode();
                 
-                if(target instanceof Konva.Text) {
-                    target = layer.findOne('#' + target.attrs.elementId)
-                }
-
-                let targetRect = target.getClientRect();
-
                 function isOverlapped(r1, r2) {
                     if((r1.y <= r2.y && r2.y <= r1.y + r1.height) ||
                         (r1.y + r1.height/2 <= r2.y + r2.height && r2.y + r2.height <= r1.y + r1.height)
@@ -400,75 +397,80 @@
                     return false
                 }
 
+                if(target instanceof Konva.Text) {
+                    target = layer.findOne('#' + target.attrs.elementId)
+                }
+                const targetRect = target.getClientRect();
+
                 layer.children.forEach(function (item) {
                     let shape = item;
-                    if(item instanceof Konva.Text) {
-                        shape = layer.findOne('#' + item.attrs.elementId)
-                    }
-                    if (shape === target || 
+                    if (shape.id() === target.id() || 
                             shape instanceof Konva.Transformer ||
                             shape instanceof Konva.Line ||
+                            shape instanceof Konva.Text ||
                             shape.name() === 'relation'
                     ) {
                         return;
                     }
                     const overlapped = isOverlapped(shape.getClientRect(), targetRect)
                     if (overlapped) {
-                        me.swappedLocation(target.id(), shape.id(), overlapped);
+                        me.changedElement(target.id(), shape.id(), overlapped);
                     }
                 });
             },
-            swappedLocation(targetId, sourceId, direction) {
+            changedElement(targetId, sourceId, direction) {
                 const me = this
                 const target = me.elements.find((el) => el.id === targetId)
                 const source = me.elements.find((el) => el.id === sourceId)
-                
-                target.x = source.x
-                target.y = source.y
-                source.x = me.swapLocation.x
+
+                // if (direction === 'left') {
+                //     source.x = target.x - 200
+                // } else if (direction === 'right') {
+                //     source.x = target.x + 200
+                // }
+                // source.y = target.y
             },
             
             /** Relation Function  */
-            addRelation(event, val) {
+            addRelation(id) {
                 const me = this
-
+                if(!id) {
+                    return
+                }
+                
                 if(me.drawningLine) {
-                    if(!(event.target instanceof Konva.Stage)) {
-                        let elId = ''
-                        if(event.target instanceof Konva.Text) {
-                            elId = event.target.attrs.elementId;
-                        } else {
-                            elId = event.target.id()
-                        }
-                        
-                        if(elId) {
-                            me.drawningLine = false;
-                            const location = {
-                                id: elId,
-                                x: Math.floor(event.target.x()),
-                                y: Math.floor(event.target.y() + event.target.height() / 2)
-                            }
+                    me.drawningLine = false
 
-                            const lastLine = me.relations[me.relations.length - 1].slice();
-                            lastLine[1] = location;
-
-                            const newLines = me.relations.slice();
-                            newLines[newLines.length - 1] = lastLine;
-                            me.relations = newLines;
-                        }
+                    const target = me.elements.find((el) => el.id === id)
+                    if (!target) { return }
+                    const location = {
+                        id: id,
+                        x: Math.floor(target.x),
+                        y: Math.floor(target.y + target.height / 2)
                     }
+
+                    const lastLine = me.relations[me.relations.length - 1].slice();
+                    lastLine[1] = location;
+
+                    const newLines = me.relations.slice()
+                    newLines[newLines.length - 1] = lastLine
+                    me.relations = newLines
+                    
                 } else {
                     me.drawningLine = true
                     me.isOpenMenu = false
                     
+                    const source = me.elements.find((el) => el.id === id)
+                    if (!source) { return }
                     const location = {
-                        id: val.id,
-                        x: Math.floor(val.x + val.width),
-                        y: Math.floor(val.y + val.height / 2),
+                        id: id,
+                        x: Math.floor(source.x + source.width),
+                        y: Math.floor(source.y + source.height / 2),
                     }
 
-                    const newLines = me.relations.concat([ [ location, location ] ]);
-                    me.relations = newLines;
+                    const newLines = me.relations.concat([ [ location, location ] ])
+                    me.relations = newLines
+
                 }
             },
             drawRelation(event) {
@@ -516,230 +518,6 @@
                     }
                 })
             },
-            
-            /** GuideLine Function */
-            getLineGuideStops(skipShape) {
-                const me = this;
-                const stage = me.$refs.stage.getNode();
-                // we can snap to stage borders and the center of the stage
-                var vertical = [0, stage.width() / 2, stage.width()];
-                var horizontal = [0, stage.height() / 2, stage.height()];
-
-                // and we snap over edges and center of each object on the canvas
-                stage.find('Rect').forEach((guideItem) => {
-                    if (guideItem === skipShape) {
-                        return;
-                    }
-                    var box = guideItem.getClientRect();
-                    // and we can snap to all edges of shapes
-                    vertical.push([box.x, box.x + box.width, box.x + box.width / 2]);
-                    horizontal.push([box.y, box.y + box.height, box.y + box.height / 2]);
-                });
-                return {
-                    vertical: vertical.flat(),
-                    horizontal: horizontal.flat(),
-                };
-            },
-            getObjectSnappingEdges(node) {
-                var box = node.getClientRect();
-                var absPos = node.absolutePosition();
-
-                return {
-                    vertical: [
-                        {
-                            guide: Math.round(box.x),
-                            offset: Math.round(absPos.x - box.x),
-                            snap: 'start',
-                        },
-                        {
-                            guide: Math.round(box.x + box.width / 2),
-                            offset: Math.round(absPos.x - box.x - box.width / 2),
-                            snap: 'center',
-                        },
-                        {
-                            guide: Math.round(box.x + box.width),
-                            offset: Math.round(absPos.x - box.x - box.width),
-                            snap: 'end',
-                        },
-                    ],
-                    horizontal: [
-                        {
-                            guide: Math.round(box.y),
-                            offset: Math.round(absPos.y - box.y),
-                            snap: 'start',
-                        },
-                        {
-                            guide: Math.round(box.y + box.height / 2),
-                            offset: Math.round(absPos.y - box.y - box.height / 2),
-                            snap: 'center',
-                        },
-                        {
-                            guide: Math.round(box.y + box.height),
-                            offset: Math.round(absPos.y - box.y - box.height),
-                            snap: 'end',
-                        },
-                    ],
-                };
-            },
-            getGuides(lineGuideStops, itemBounds) {
-                var resultV = [];
-                var resultH = [];
-
-                lineGuideStops.vertical.forEach((lineGuide) => {
-                    itemBounds.vertical.forEach((itemBound) => {
-                        var diff = Math.abs(lineGuide - itemBound.guide);
-                        // if the distance between guild line and object snap point is close we can consider this for snapping
-                        if (diff < GUIDELINE_OFFSET) {
-                            resultV.push({
-                                lineGuide: lineGuide,
-                                diff: diff,
-                                snap: itemBound.snap,
-                                offset: itemBound.offset,
-                            });
-                        }
-                    });
-                });
-
-                lineGuideStops.horizontal.forEach((lineGuide) => {
-                    itemBounds.horizontal.forEach((itemBound) => {
-                        var diff = Math.abs(lineGuide - itemBound.guide);
-                        if (diff < GUIDELINE_OFFSET) {
-                            resultH.push({
-                                lineGuide: lineGuide,
-                                diff: diff,
-                                snap: itemBound.snap,
-                                offset: itemBound.offset,
-                            });
-                        }
-                    });
-                });
-
-                var guides = [];
-
-                // find closest snap
-                var minV = resultV.sort((a, b) => a.diff - b.diff)[0];
-                var minH = resultH.sort((a, b) => a.diff - b.diff)[0];
-                if (minV) {
-                    guides.push({
-                        lineGuide: minV.lineGuide,
-                        offset: minV.offset,
-                        orientation: 'V',
-                        snap: minV.snap,
-                    });
-                }
-                if (minH) {
-                    guides.push({
-                        lineGuide: minH.lineGuide,
-                        offset: minH.offset,
-                        orientation: 'H',
-                        snap: minH.snap,
-                    });
-                }
-                return guides;
-            },
-            drawGuides(guides) {
-                const me = this;
-                const layer = me.$refs.layer.getNode();
-
-                guides.forEach((lg) => {
-                    if (lg.orientation === 'H') {
-                        var line = new Konva.Line({
-                            points: [-6000, 0, 6000, 0],
-                            stroke: 'rgb(0, 161, 255)',
-                            strokeWidth: 1,
-                            name: 'guid-line',
-                            dash: [4, 6],
-                        });
-                        layer.add(line);
-                        line.absolutePosition({
-                            x: 0,
-                            y: lg.lineGuide,
-                        });
-                    } else if (lg.orientation === 'V') {
-                        var line = new Konva.Line({
-                            points: [0, -6000, 0, 6000],
-                            stroke: 'rgb(0, 161, 255)',
-                            strokeWidth: 1,
-                            name: 'guid-line',
-                            dash: [4, 6],
-                        });
-                        layer.add(line);
-                        line.absolutePosition({
-                            x: lg.lineGuide,
-                            y: 0,
-                        });
-                    }
-                });
-            },
-            beforeDrawGuide(target) {
-                const me = this;
-                const layer = me.$refs.layer.getNode();
-                
-                // clear all previous lines on the screen
-                layer.find('.guid-line').forEach((l) => l.destroy());
-
-                // find possible snapping lines
-                var lineGuideStops = me.getLineGuideStops(target);
-                // find snapping points of current object
-                var itemBounds = me.getObjectSnappingEdges(target);
-
-                // now find where can we snap current object
-                var guides = me.getGuides(lineGuideStops, itemBounds);
-
-                // do nothing of no snapping
-                if (!guides.length) {
-                    return;
-                }
-
-                me.drawGuides(guides);
-
-                var absPos = target.absolutePosition();
-                // now force object position
-                guides.forEach((lg) => {
-                    switch (lg.snap) {
-                        case 'start': {
-                            switch (lg.orientation) {
-                                case 'V': {
-                                    absPos.x = lg.lineGuide + lg.offset;
-                                    break;
-                                }
-                                case 'H': {
-                                    absPos.y = lg.lineGuide + lg.offset;
-                                    break;
-                                }
-                            }
-                            break;
-                        }
-                        case 'center': {
-                            switch (lg.orientation) {
-                                case 'V': {
-                                    absPos.x = lg.lineGuide + lg.offset;
-                                    break;
-                                }
-                                case 'H': {
-                                    absPos.y = lg.lineGuide + lg.offset;
-                                    break;
-                                }
-                            }
-                            break;
-                        }
-                        case 'end': {
-                            switch (lg.orientation) {
-                                case 'V': {
-                                    absPos.x = lg.lineGuide + lg.offset;
-                                    break;
-                                }
-                                case 'H': {
-                                    absPos.y = lg.lineGuide + lg.offset;
-                                    break;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                });
-                target.absolutePosition(absPos);
-            }
 
         }
     };

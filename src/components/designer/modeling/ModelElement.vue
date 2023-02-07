@@ -52,16 +52,16 @@
             },
         },
         methods: {
-            openPanel() {
-                this.$emit('openPanel', this.config)
+            handleModelPanel() {
+                this.$emit('handleModelPanel', this.config)
             },
-            openMenu(e) {
+            handleContextMenu(e) {
                 e.evt.preventDefault()
                 const obj = {
                     event: e,
                     config: this.config
                 }
-                this.$emit('openMenu', obj)
+                this.$emit('handleContextMenu', obj)
             },
             handleDragStart(e) {
                 e.target.on('dragmove', () => {

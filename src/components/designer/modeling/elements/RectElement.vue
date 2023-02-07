@@ -4,14 +4,14 @@
                 :config="config"
                 @dragstart="handleDragStart"
                 @transformend="handleTransformEnd"
-                @dblclick="openPanel"
-                @contextMenu="openMenu"
+                @dblclick="handleModelPanel"
+                @contextMenu="handleContextMenu"
         ></v-rect>
         <v-text
                 :config="textConfig"
                 @dragstart="handleDragStart"
-                @dblclick="openPanel"
-                @contextMenu="openMenu"
+                @dblclick="handleModelPanel"
+                @contextMenu="handleContextMenu"
         ></v-text>
     </div>
 </template>
