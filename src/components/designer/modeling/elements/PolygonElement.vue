@@ -1,17 +1,17 @@
 <template>
     <div>
         <v-regular-polygon
-                :config="config"
+        :config="config"
                 @dragstart="handleDragStart"
                 @transformend="handleTransformEnd"
-                @dblclick="openPanel"
-                @contextMenu="openMenu"
+                @dblclick="handleModelPanel"
+                @contextMenu="handleContextMenu"
         ></v-regular-polygon>
         <v-text
-                :config="textConfig"
+        :config="textConfig"
                 @dragstart="handleDragStart"
-                @dblclick="openPanel"
-                @contextMenu="openMenu"
+                @dblclick="handleModelPanel"
+                @contextMenu="handleContextMenu"
         ></v-text>
     </div>
 </template>

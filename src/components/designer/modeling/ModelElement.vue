@@ -17,19 +17,27 @@
         },
         computed: {
             textConfig() {
+                const me = this
                 let obj = {
-                    elementId: this.config.id,
-                    text: this.config.name,
-                    x: this.config.x,
-                    y: this.config.y,
-                    width: this.config.width ? this.config.width : 100,
+                    elementId: me.config.id,
+                    text: me.config.name,
                     fontSize: 20,
                     fill: 'black',
                     align: 'center',
                     draggable: true,
                 }
-                if(this.config.type.includes('rect')) {
-                    obj.y += this.config.height/2 - 10
+                if (me.config.type.includes('rect')) {
+                    obj.x = me.config.x
+                    obj.y = me.config.y + me.config.height + 10
+                    obj.width = me.config.width
+                } else if (me.config.type.includes('circle')) {
+                    obj.x = me.config.x - me.config.radius
+                    obj.y = me.config.y + me.config.radius + 10
+                    obj.width = me.config.radius * 2
+                } else if (me.config.type.includes('polygon')) {
+                    obj.x = me.config.x - me.config.radius
+                    obj.y = me.config.y + me.config.radius + 10
+                    obj.width = me.config.radius * 2
                 }
                 return obj
             }

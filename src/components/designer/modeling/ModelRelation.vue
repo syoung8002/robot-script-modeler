@@ -59,15 +59,6 @@
         },
         created() {
         },
-        watch: {
-            points: {
-                deep: true,
-                handler(newVal, oldVal) {
-                    if(newVal) {
-                    }
-                }
-            },
-        },
         methods: {
         }
     }
