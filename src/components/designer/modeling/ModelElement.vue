@@ -23,18 +23,17 @@
                     text: me.config.name,
                     fontSize: 20,
                     fill: 'black',
-                    align: 'center',
-                    draggable: true,
+                    align: 'center'
                 }
-                if (me.config.type.includes('rect')) {
+                if (me.config.type.includes('task')) {
                     obj.x = me.config.x
                     obj.y = me.config.y + me.config.height + 10
                     obj.width = me.config.width
-                } else if (me.config.type.includes('circle')) {
+                } else if (me.config.type.includes('event')) {
                     obj.x = me.config.x - me.config.radius
                     obj.y = me.config.y + me.config.radius + 10
                     obj.width = me.config.radius * 2
-                } else if (me.config.type.includes('polygon')) {
+                } else if (me.config.type.includes('gateway')) {
                     obj.x = me.config.x - me.config.radius
                     obj.y = me.config.y + me.config.radius + 10
                     obj.width = me.config.radius * 2
@@ -96,7 +95,7 @@
                 if (e.target instanceof Konva.Text) {
                     me.value.x = Math.floor(e.target.x())
                     
-                    if(this.config.type.includes('rect')) {
+                    if(this.config.type.includes('task')) {
                         me.value.y = Math.floor(e.target.y() - me.config.height/2 + 10)
                     } else {
                         me.value.y = Math.floor(e.target.y())

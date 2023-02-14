@@ -21,7 +21,7 @@
 
     export default {
         mixins: [ModelElement],
-        name: 'rect-element',
+        name: 'task-element',
         data() {
             return {
             }

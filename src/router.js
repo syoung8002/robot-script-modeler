@@ -10,9 +10,9 @@ import PolygonElement from './components/designer/modeling/elements/PolygonEleme
 import CircleElement from './components/designer/modeling/elements/CircleElement'
 
 Vue.component('model-relation', ModelRelation)
-Vue.component('rect-element', RectElement)
-Vue.component('polygon-element', PolygonElement)
-Vue.component('circle-element', CircleElement)
+Vue.component('task-element', RectElement)
+Vue.component('gateway-element', PolygonElement)
+Vue.component('event-element', CircleElement)
 
 const options = {
     // mode: 'history',

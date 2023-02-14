@@ -53,35 +53,23 @@
             },
             elementInfo() {
                 const me = this
-                if(me.value.type.includes('rect')) {
+                if(me.value.type.includes('task')) {
                     return {
                         type: 'Rectangle',
                         icon: 'mdi-square'
                     }
                 }
-                if(me.value.type.includes('circle')) {
+                if(me.value.type.includes('event')) {
                     return {
-                        type: 'Circle',
+                        type: 'event',
                         icon: 'mdi-circle'
                     }
                 }
-                if(me.value.type.includes('polygon')) {
-                    if(me.value.sides === 3) {
+                if(me.value.type.includes('gateway')) {
+                    if(me.value.sides === 4) {
                         return {
                             type: 'Triangle',
-                            icon: 'mdi-triangle'
-                        }
-                    }
-                    if(me.value.sides === 5) {
-                        return {
-                            type: 'Pentagon',
-                            icon: 'mdi-pentagon'
-                        }
-                    }
-                    if(me.value.sides === 6) {
-                        return {
-                            type: 'Hexagon',
-                            icon: 'mdi-hexagon'
+                            icon: 'mdi-rhombus'
                         }
                     }
                 }

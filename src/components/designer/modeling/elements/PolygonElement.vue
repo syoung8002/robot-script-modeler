@@ -21,7 +21,7 @@
 
     export default {
         mixins: [ModelElement],
-        name: 'polygon-element',
+        name: 'gateway-element',
         data() {
             return {
             }

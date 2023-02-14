@@ -21,7 +21,7 @@
 
     export default {
         mixins: [ModelElement],
-        name: 'circle-element',
+        name: 'event-element',
         data() {
             return {
             }
