@@ -51,12 +51,12 @@
 
                         context.beginPath();
                         context.moveTo(config.points[1].x, config.points[1].y);
-                        context.lineTo(config.points[1].x - (14 * xDir), config.points[1].y - 6);
+                        context.lineTo(config.points[1].x - (10 * xDir), config.points[1].y - 4);
                         context.quadraticCurveTo(
-                            config.points[1].x - (14 * xDir), 
+                            config.points[1].x - (10 * xDir), 
                             config.points[1].y + 3, 
-                            config.points[1].x - (14 * xDir), 
-                            config.points[1].y + 6
+                            config.points[1].x - (10 * xDir), 
+                            config.points[1].y + 4
                         );
                         context.closePath();
 
@@ -69,22 +69,11 @@
     </div>
 </template>
 
-<script>
-    // import ModelElement from './ModelElement'
+<script lang="ts">
+    import { Component, Vue, Prop } from "vue-property-decorator"
 
-    export default {
-        // mixins: [ModelElement],
-        name: 'model-relation',
-        props: {
-            config: Object,
-        },
-        data() {
-            return {
-            }
-        },
-        created() {
-        },
-        methods: {
-        }
+    @Component
+    export default class ModelRelation extends Vue {
+        @Prop() config!: { type: object }
     }
 </script>

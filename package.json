@@ -11,22 +11,25 @@
     "axios": "^1.2.5",
     "core-js": "^3.8.3",
     "konva": "^8.4.2",
+    "monaco-editor-vue": "^1.0.10",
+    "monaco-editor-webpack-plugin": "^7.0.1",
     "vue": "^2.6.14",
     "vue-konva": "^2.1.7",
+    "vue-property-decorator": "^9.1.2",
     "vue-router": "^3.6.5",
+    "vuedraggable": "^2.24.3",
     "vuetify": "^2.6.14",
     "vuex": "^3.6.2"
   },
   "devDependencies": {
     "@mdi/font": "^7.1.96",
+    "@vue/cli-plugin-typescript": "^5.0.8",
     "@vue/cli-service": "~5.0.0",
-    "css-loader": "^6.7.3",
-    "cssimportant-loader": "^0.4.0",
-    "sass": "^1.57.1",
+    "sass": "^1.58.3",
     "sass-loader": "^13.2.0",
+    "typescript": "^4.9.5",
     "vue-cli-plugin-vuetify": "^2.5.8",
-    "vue-template-compiler": "^2.6.14",
-    "vuetify-loader": "^1.9.2"
+    "vue-template-compiler": "^2.6.14"
   },
   "browserslist": [
     "> 1%",

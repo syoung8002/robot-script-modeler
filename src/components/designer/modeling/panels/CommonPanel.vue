@@ -12,34 +12,35 @@
                 </v-list-item-avatar>
 
                 <v-list-item-content>
-                    <v-list-item-title>{{ config.name }}</v-list-item-title>
+                    <v-list-item-title>{{ elementType }}</v-list-item-title>
                 </v-list-item-content>
             </v-list-item>
         </template>
 
         <v-divider></v-divider>
 
-        <div v-if="elementType=='Gateway'">
-            <gateway-panel
-                    :type="config.name"
-            ></gateway-panel>
-        </div>
+        <slot name="edit-name">
+            <v-card outlined>
+                <v-card-text>
+                    <v-text-field
+                            v-model="config.name"
+                            label="Name"
+                            autofocus
+                    ></v-text-field>
+                </v-card-text>
+            </v-card>
+        </slot>
+        <slot name="edit-property"></slot>
     </v-navigation-drawer>
 </template>
 
+
 <script lang="ts">
-    import { Vue, Component, Prop } from "vue-property-decorator"
-    import GatewayPanel from "./panels/GatewayPanel.vue"
-    
-    @Component({
-        components: {
-            GatewayPanel,
-        }
-    })
+    import { Vue, Component, Mixins } from "vue-property-decorator"
+    import ModelPanel from "../ModelPanel.vue"
 
-    export default class ModelPanel extends Vue {
-        @Prop() public value!: { type: any }
-
+    @Component
+    export default class CommonPanel extends Mixins(ModelPanel) {
         // computed
         get config() {
             return this.value
@@ -52,7 +53,7 @@
             if(this.value.type.includes('Event')) {
                 return 'Event'
             }
-            if(this.value.type.includes('Gateway')) {
+            if(this.value.type.includes('Tateway')) {
                 return 'Gateway'
             }
         }
@@ -63,7 +64,7 @@
             if(this.value.type.includes('Event')) {
                 return 'mdi-circle'
             }
-            if(this.value.type.includes('Gateway')) {
+            if(this.value.type.includes('Tateway')) {
                 return 'mdi-rhombus'
             }
         }
