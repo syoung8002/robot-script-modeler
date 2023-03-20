@@ -4,6 +4,8 @@
             <div v-for="item in elementTypes" 
                     :key="item.name"
                     class="tool-item"
+                    draggable="true"
+                    @dragend="addKeyword($event, item)"
                     @click="openKeywordDialog($event, item.name)"
             >
                 <v-icon>{{ item.icon }}</v-icon>
@@ -262,8 +264,12 @@
         }
 
         addKeyword(event: any, value: any) {
-            const elementInfo = this.elementTypes.find((item) => item.name.includes(this.elementType))
-            this.$emit('addKeyword', event, elementInfo, value)
+            if (typeof value == 'string') {
+                const elementInfo = this.elementTypes.find((item) => item.name.includes(this.elementType))
+                this.$emit('addKeyword', event, elementInfo, value)
+            } else {
+                this.$emit('addKeyword', event, value, value.name)
+            }
             this.keywordDialog = false
         }
     }

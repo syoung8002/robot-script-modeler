@@ -22,7 +22,21 @@
         <div v-if="elementType=='Gateway'">
             <gateway-panel
                     :type="config.name"
+                    :value="config.properties"
             ></gateway-panel>
+        </div>
+        <div v-if="elementType=='Task'">
+            <task-panel
+                    :type="config.name"
+                    :value="config.properties"
+            ></task-panel>
+            <v-card flat>
+                <v-card-text>
+                    <v-text-field
+                            v-model="config.name"
+                    ></v-text-field>
+                </v-card-text>
+            </v-card>
         </div>
     </v-navigation-drawer>
 </template>
@@ -30,10 +44,12 @@
 <script lang="ts">
     import { Vue, Component, Prop } from "vue-property-decorator"
     import GatewayPanel from "./panels/GatewayPanel.vue"
+    import TaskPanel from "./panels/TaskPanel.vue"
     
     @Component({
         components: {
             GatewayPanel,
+            TaskPanel,
         }
     })
 

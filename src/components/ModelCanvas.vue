@@ -370,6 +370,7 @@
                 element.height = componentInfo.height
                 element.cornerRadius = 10
             }
+            element.properties = {}
             
             this.elements.push(element)
 

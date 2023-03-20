@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-card outlined>
+        <v-card flat>
             <v-card-text v-if="type=='FOR'">
                 <p>Assign Variable</p>
                 <v-text-field
@@ -29,6 +29,16 @@
                     v-model="variable"
                 ></v-text-field>
             </v-card-text>
+            <v-card-actions v-if="type=='IF'">
+                <v-btn outlined small>
+                    <v-icon>mdi-plus</v-icon>
+                    Else If
+                </v-btn>
+                <v-btn outlined small>
+                    <v-icon>mdi-plus</v-icon>
+                    Else
+                </v-btn>
+            </v-card-actions>
 
             <v-card-text v-if="type=='Try-Except'">
                 <div>
@@ -65,8 +75,14 @@
 
     @Component
     export default class GatewayPanel extends Vue {
-        @Prop() public type!: { type: string }
+        @Prop() public type!: String
+        @Prop() public value!: any
         
         variable: string = ''
+
+        get properties() {
+            let obj = this.value
+            return obj
+        }
     }
 </script>
