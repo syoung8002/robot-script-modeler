@@ -35,6 +35,27 @@
             <v-layer ref="layer">
                 <div v-for="element in elements" :key="element.id">
                     <component 
+                            v-if="element.type == 'TaskElement' && element.taskType != 'task'"
+                            :is="element.type"
+                            :config="element"
+                            @mousedown="handleStageMouseDown"
+                            @movingRelation="movingConnection"
+                            @updateConfig="updateConfig"
+                            @handleModelPanel="handleModelPanel"
+                            @handleContextMenu="handleContextMenu"
+                    ></component>
+                    <!-- <component 
+                            v-if="element.type == 'TaskElement'"
+                            :is="element.taskType"
+                            :config="element"
+                            @mousedown="handleStageMouseDown"
+                            @movingRelation="movingConnection"
+                            @updateConfig="updateConfig"
+                            @handleModelPanel="handleModelPanel"
+                            @handleContextMenu="handleContextMenu"
+                    ></component> -->
+                    <component 
+                            v-else
                             :is="element.type"
                             :config="element"
                             @mousedown="handleStageMouseDown"
@@ -117,13 +138,11 @@
     import TaskElement from '@/components/designer/modeling/elements/TaskElement.vue'
     import ModelRelation from "@/components/designer/modeling/ModelRelation.vue";
     import ScriptPanel from "@/components/designer/modeling/ScriptPanel.vue";
-    import ModelPanel from "@/components/designer/modeling/ModelPanel.vue";
+    import ModelPanel from "@/components/designer/modeling/panels/Panel.vue";
     import ElementList from "@/components/designer/modeling/ElementList.vue";
-
     import { Stage } from 'konva/lib/Stage';
     import { Layer } from "konva/lib/Layer";
     import { Node } from 'konva/lib/Node';
-
     interface KonvaLayer extends Vue {
         getNode (): Layer
     }
@@ -290,6 +309,15 @@
             })
 
         }
+        kebabCase(str: string) {
+            console.log(str)
+            const result = str
+                .replace(/([a-z])([A-Z])/g, "$1-$2")
+                .replace(/[\s_]+/g, '-')
+                .toLowerCase();
+            console.log(str, result)    
+            return result
+        }
 
         uuid() {
             function s4() {
@@ -303,7 +331,6 @@
         }
         handleModelPanel(val: any) {
             this.isOpenPanel = false
-
             if (val) {
                 this.selectedShape = this.elements.find((r: any) => r.id === val.id);
                 this.selectedShapeId = val.id
@@ -355,6 +382,7 @@
                 type: componentInfo.component,
                 incomingRef: '',
                 outgoingRef: '',
+                taskType: this.kebabCase(name)
             }
 
             let element2 = null

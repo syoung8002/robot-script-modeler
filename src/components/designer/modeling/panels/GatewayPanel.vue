@@ -71,13 +71,16 @@
 </template>
 
 <script lang="ts">
-    import { Vue, Component, Prop } from "vue-property-decorator"
+    import { Vue, Component, Prop, Mixins } from "vue-property-decorator"
+    import Panel from "@/components/designer/modeling/panels/Panel.vue";
 
-    @Component
-    export default class GatewayPanel extends Vue {
-        @Prop() public type!: String
-        @Prop() public value!: any
-        
+    @Component({
+        components: {
+            Panel
+        }
+    })
+
+    export default class GatewayPanel extends Mixins(Panel) {
         variable: string = ''
 
         get properties() {

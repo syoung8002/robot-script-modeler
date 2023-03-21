@@ -17,7 +17,6 @@
         // data
         public value: any = null;
         public modelCanvasComponent: any = null;
-        
 
         mounted() {
             this.modelCanvasComponent = this.getComponent('model-canvas')
@@ -28,7 +27,7 @@
         @Watch("value", {immediate: true, deep: true})
         public updatedValue(value: object, oldValue: object) {
             if(value) {
-                // value.id = this.config.id
+                console.log(value)
                 this.$emit('updateConfig', value)
             }
         }

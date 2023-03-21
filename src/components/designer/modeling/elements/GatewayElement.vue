@@ -1,11 +1,11 @@
 <template>
     <div>
         <v-regular-polygon
-        :config="config"
-                @dragstart="handleDragStart"
-                @transformend="handleTransformEnd"
-                @dblclick="handleModelPanel"
-                @contextMenu="handleContextMenu"
+            :config="config"
+            @dragstart="handleDragStart"
+            @transformend="handleTransformEnd"
+            @dblclick="handleModelPanel"
+            @contextMenu="handleContextMenu"
         ></v-regular-polygon>
         <v-text
                 :config="{
@@ -19,7 +19,7 @@
 
 <script lang="ts">
     import { Vue, Component, Mixins } from "vue-property-decorator"
-    import ModelElement from '@/components/designer/modeling/ModelElement.vue'
+    import ModelElement from '@/components/designer/modeling/elements/ModelElement.vue'
 
     @Component({
         components: {

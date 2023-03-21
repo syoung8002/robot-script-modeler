@@ -1,5 +1,5 @@
 <template>
-    <v-navigation-drawer
+   <v-navigation-drawer
             absolute
             permanent
             right
@@ -18,7 +18,6 @@
         </template>
 
         <v-divider></v-divider>
-
         <div v-if="elementType=='Gateway'">
             <gateway-panel
                     :type="config.name"
@@ -26,35 +25,27 @@
             ></gateway-panel>
         </div>
         <div v-if="elementType=='Task'">
-            <task-panel
-                    :type="config.name"
-                    :value="config.properties"
-            ></task-panel>
             <v-card flat>
                 <v-card-text>
                     <v-text-field
                             v-model="config.name"
                     ></v-text-field>
+                    <task-panel
+                        :task-type="config.taskType"
+                        :value="config.properties"
+                    ></task-panel>
                 </v-card-text>
             </v-card>
         </div>
     </v-navigation-drawer>
 </template>
-
 <script lang="ts">
     import { Vue, Component, Prop } from "vue-property-decorator"
-    import GatewayPanel from "./panels/GatewayPanel.vue"
-    import TaskPanel from "./panels/TaskPanel.vue"
     
-    @Component({
-        components: {
-            GatewayPanel,
-            TaskPanel,
-        }
-    })
-
-    export default class ModelPanel extends Vue {
-        @Prop() public value!: { type: any }
+    @Component
+    export default class Panel extends Vue {
+        @Prop() public taskType!: String
+        @Prop() public value!: any
 
         // computed
         get config() {
@@ -83,5 +74,6 @@
                 return 'mdi-rhombus'
             }
         }
+        
     }
 </script>

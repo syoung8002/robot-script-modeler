@@ -73,15 +73,19 @@
     @Component
     export default class ElementList extends Vue {
         @Prop() elementTypes!: any[]
-        
+        mounted() {
+            var aa = {
+                keywordType: 'Browser',
+                list: Vue.prototype.$browserList
+            }
+            this.keywordList.push(aa)
+        }
         // data
         public elementType: string = ''
         public x: number = 0
         public y: number = 0
-
         public keywordDialog: boolean = false
         public keywordTab: any = null
-
         public controlList: any[] = [
             'FOR',
             'While',
@@ -172,10 +176,12 @@
                 keywordType: 'File System',
                 list: []
             },
-            {
-                keywordType: 'Browser',
-                list: []
-            },
+            // {
+            //     keywordType: 'Browser',
+            //     list: [
+            //         'Open Available Browser'
+            //     ]
+            // },
             {
                 keywordType: 'HTTP',
                 list: [

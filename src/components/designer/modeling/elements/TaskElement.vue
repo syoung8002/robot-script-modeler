@@ -14,19 +14,26 @@
                     text: config.name,
                 }"
         ></v-text>
+        
     </div>
 </template>
 
 <script lang="ts">
-    import { Vue, Component, Mixins } from "vue-property-decorator"
-    import ModelElement from '@/components/designer/modeling/ModelElement.vue'
+    import { Component, Mixins } from "vue-property-decorator"
+    import ModelElement from '@/components/designer/modeling/elements/ModelElement.vue'
 
     @Component({
         components: {
             ModelElement,
         }
     })
+    export default class TaskElement extends Mixins(ModelElement) {
 
-    export default class TaskElement extends Mixins(ModelElement) {}
+        mounted() {
+            console.log("**********")
+            console.log(this.value)
+            console.log("**********")
+        }
+
+    }
 </script>
-
