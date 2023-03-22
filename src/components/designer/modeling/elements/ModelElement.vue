@@ -27,7 +27,6 @@
         @Watch("value", {immediate: true, deep: true})
         public updatedValue(value: object, oldValue: object) {
             if(value) {
-                console.log(value)
                 this.$emit('updateConfig', value)
             }
         }

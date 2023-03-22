@@ -76,24 +76,6 @@
             </v-layer>
         </v-stage>
 
-        <!-- tools -->
-        <!-- <v-card class="tools" max-width="100">
-            <div @click="configKonva.draggable = !configKonva.draggable"
-                    :class="{ hands: configKonva.draggable }"
-                    class="tool-item"
-            >
-                <v-icon>mdi-drag</v-icon>
-            </div>
-            <div v-for="item in elementTypes" 
-                    :key="item.name"
-                    draggable="true"
-                    class="tool-item"
-                    @drag="detectedCollision($event, item)"
-                    @dragend="addElement($event, item)"
-            >
-                <v-icon>{{ item.icon }}</v-icon>
-            </div>
-        </v-card> -->
         <element-list
                 :elementTypes="elementTypes"
                 @selectedKeyword="detectedCollision"
@@ -103,8 +85,7 @@
         <!-- Robot Script Panel-->
         <ScriptPanel
                 v-if="isOpenScript"
-                :elements="elements"
-                :taskName="taskName"
+                :robot="robot"
         ></ScriptPanel>
 
         <!-- Element Context Menu-->
@@ -143,6 +124,8 @@
     import { Stage } from 'konva/lib/Stage';
     import { Layer } from "konva/lib/Layer";
     import { Node } from 'konva/lib/Node';
+    import { Robot, SeqTask, Task, IfTask, ForTask, Keyword, CallKeyword } from "@/types/Task";
+
     interface KonvaLayer extends Vue {
         getNode (): Layer
     }
@@ -172,6 +155,9 @@
     })
 
     export default class ModelCanvas extends Vue {
+        taskName: string = '';
+        robot: Task = new Robot(1, this.taskName, [])
+        
         configKonva: any = {
             width: WIDTH,
             height: HEIGHT,
@@ -204,41 +190,11 @@
                 icon: 'mdi-square-outline',
             },                    
         ];
-        elements: any[] = [
-            {
-                type: 'EventElement',
-                id: this.uuid(),
-                rotation: 0,
-                x: 200,
-                y: 300,
-                radius: 20,
-                scaleX: 1,
-                scaleY: 1,
-                fill: '#fafafa',
-                stroke: '#000000',
-                strokeWidth: 2,
-                name: 'Start Event',
-                draggable: true,
-            },
-            {
-                type: 'EventElement',
-                id: this.uuid(),
-                rotation: 0,
-                x: 1200,
-                y: 300,
-                radius: 20,
-                scaleX: 1,
-                scaleY: 1,
-                fill: '#fafafa',
-                stroke: '#000000',
-                strokeWidth: 5,
-                name: 'End Event',
-                draggable: true,
-            },
-        ];
-        // relation
+        
+        // modeling
+        elements: any[] = [];
         relations: any = [];
-        taskName: string = '';
+
         dividedLines: any = [];
         divisiveElement: any = null;
         // shape
@@ -254,31 +210,6 @@
         isOpenScript: boolean = false;
 
         mounted () {
-            const startEv = this.elements.find((el) => el.name.includes('Start Event'))
-            const endEv = this.elements.find((el) => el.name.includes('End Event'))
-            const relation = {
-                name: 'relation',
-                from: startEv.id,
-                to: endEv.id,
-                points: [
-                    {
-                        x: startEv.x + startEv.radius,
-                        y: startEv.y
-                    },
-                    {
-                        x: endEv.x - endEv.radius,
-                        y: endEv.y
-                    }
-                ],                  
-                stroke: '#000000',
-                strokeWidth: 2,
-            }
-            this.relations.push(relation)
-            startEv.eventRef = endEv.id
-            startEv.outgoingRef = endEv.id
-            endEv.eventRef = startEv.id
-            endEv.incomingRef = startEv.id
-
             const layer = this.$refs.layer.getNode();
             /** Drag Event */
             layer.on('dragmove', (event: any) => {
@@ -294,9 +225,7 @@
                 this.detectedCollision(event, null)
                 const element = this.elements.find((el: any) => el.id === target.id())
                 if(this.lappedElement != null) {
-                    if (this.lappedElement.type.includes('Task')) {
-                        //
-                    } else if (this.lappedElement.type.includes('Gateway')) {
+                    if (this.lappedElement.type.includes('Gateway')) {
                         if (this.lappedElement.id != element.id) {
                             this.addGatewayConnection(element)
                         }
@@ -308,7 +237,15 @@
                 }
             })
 
+            const eventInfo = this.elementTypes.find((item) => item.component.includes('Event'))
+            this.addElement(null, eventInfo, '');
         }
+
+        @Watch("taskName", {immediate: true, deep: true})
+        updateTaskName(val: string) {
+            this.robot.setName(val)
+        }
+
         kebabCase(str: string) {
             console.log(str)
             const result = str
@@ -327,7 +264,6 @@
             }
 
             return s4() + s4();
-            // return Math.floor((1 + Math.random()) * 0x100)
         }
         handleModelPanel(val: any) {
             this.isOpenPanel = false
@@ -336,7 +272,6 @@
                 this.selectedShapeId = val.id
                 this.isOpenPanel = true
             } {
-                // this.selectedShape = null
                 this.selectedShapeId = ''
             }
         }
@@ -352,7 +287,6 @@
                 this.isOpenMenu = true
             } else {
                 this.menuStyle = {}
-                // this.selectedShape = null
                 this.selectedShapeId = ''
             }
         }
@@ -377,28 +311,34 @@
                 fill: '#fafafa',
                 stroke: '#000000',
                 draggable: true,
-                x: event.pageX,
-                y: event.pageY,
+                x: event ? event.pageX: 200,
+                y: event ? event.pageY: 300,
                 type: componentInfo.component,
                 incomingRef: '',
                 outgoingRef: '',
                 taskType: this.kebabCase(name)
             }
 
-            let element2 = null
             if(componentInfo.component.includes('Event')) {
                 element.name = 'Start Event'
                 element.radius = componentInfo.radius
             } else if(componentInfo.component.includes('Gateway')) {
                 element.sides = componentInfo.sides
                 element.radius = componentInfo.radius
-                element.tasks = []
+
+                if (name.includes('FOR')) {
+                    this.robot.child.push(new ForTask(element.id, name, []))
+                } else if (name.includes('IF')) {
+                    this.robot.child.push(new IfTask(element.id, name, []))
+                }
+
             } else {
                 element.width = componentInfo.width
                 element.height = componentInfo.height
                 element.cornerRadius = 10
+
+                this.robot.child.push(new Task(element.id, name, []))
             }
-            element.properties = {}
             
             this.elements.push(element)
 
@@ -411,6 +351,7 @@
                     this.divisiveElement = element
                     this.divideConnection()
 
+                    let element2 = null
                     if(componentInfo.component.includes('Gateway')) {
                         element2 = JSON.parse(JSON.stringify(element))
                         element2.x += 500
@@ -430,13 +371,12 @@
 
                         this.divisiveElement = element2
                         this.divideConnection()
-
                     }
                 }
             } else {
-
+                let element2 = null
                 element2 = JSON.parse(JSON.stringify(element))
-                element2.x += 800
+                element2.x += 1000
                 element2.name = 'End Event'
                 element2.strokeWidth = 5
                 element2.id = this.uuid()
@@ -447,7 +387,6 @@
 
                 this.elements.push(element2)
                 this.addConnection(element.id, element2.id)
-
             }
         }
         deleteElement(id: string) {
@@ -510,30 +449,29 @@
                 this.deleteConnection(delId)
             })
 
-            // const transformerNode = this.$refs.transformer.getNode()
-            // transformerNode.nodes([])
-
+            // robot
+            this.robot.child.forEach((obj: any) => {
+                if(obj.id == id) {
+                    this.robot.child = this.robot.delChild(delList, this.robot.child)
+                } else if(obj.id == delEl.incomingRef) {
+                    obj.child = this.robot.delChild(delList, obj.child)
+                }
+            })
+            
             this.handleContextMenu(null)
         }
             
         /** Stage Function */
         handleStageMouseDown(event: any) {
             if (event.target !== event.target.getStage()) {
-                const clickedOnTransformer = event.target.getParent().className === 'Transformer';
-                if (clickedOnTransformer) {
-                    return;
-                }
-
-                let elId = '';
+                                let elId = '';
                 if (event.target instanceof Konva.Text) {
                     elId = event.target.attrs.elementId;
                 } else {
                     elId = event.target.id();
                 }
                 this.selectedShapeId = elId;
-
             }
-            this.updateTransformer()
 
             if (this.isOpenScript) {
                 this.isOpenScript = false
@@ -541,21 +479,6 @@
 
             this.handleModelPanel(null)
             this.handleContextMenu(null)
-        }
-        updateTransformer() {
-            const transformerNode = this.$refs.transformer.getNode();
-            const stage = this.$refs.stage.getStage();
-
-            const selectedNode = stage.findOne('#' + this.selectedShapeId);
-            // if (selectedNode === transformerNode.node()) {
-            //     return;
-            // }
-
-            // if (selectedNode instanceof Konva.Layer || !selectedNode) {
-            //     transformerNode.nodes([]);
-            // } else {
-            //     transformerNode.nodes([selectedNode]);
-            // }
         }
         detectedCollision(event: any, type: any) {
             let shape: any = {}
@@ -738,8 +661,6 @@
             this.reconnectLine()
         }
         divideConnection() {
-            const me = this
-            
             if (this.dividedLines.length < 1) {
                 return
             }
@@ -759,8 +680,7 @@
                 const source = this.elements.find((el: any) => el.id === line.from)
                 const target = this.elements.find((el: any) => el.id === line.to)
                 if(source.type.includes('Gateway') && target.type.includes('Gateway')) {
-                    source.tasks.push(this.divisiveElement.id)
-                    target.tasks.push(this.divisiveElement.id)
+                    this.updateTasks(source, this.divisiveElement)
                 }
             
                 this.addConnection(line.from, this.divisiveElement.id)
@@ -772,6 +692,13 @@
 
             this.reconnectLine()
         }
+
+        updateTasks(parent: any, child: any) {
+            this.robot.child = this.robot.child.filter((task: any) => task.id != child.id)
+            var parentTask = this.robot.child.find((task: any) => task.id == parent.id)
+            parentTask?.child.push(new Task(child.id, child.name, child.child))
+        }
+
         movingConnection(val: any) {
             const me = this
 
@@ -874,9 +801,7 @@
             if (!endLine) {
                 const list = this.elements.filter((el: any) => el.id !== endEv.id)
                 const desc = list.sort((a: any, b: any) => {
-                    // if(a.id != endEv.id) {
-                        return b.x - a.x
-                    // }
+                    return b.x - a.x
                 })
                 this.addConnection(desc[0].id, endEv.id)
             }
@@ -884,7 +809,7 @@
         addGatewayConnection(element: any) {
             const me = this
             this.deleteConnection(element.id)
-            
+
             element.incomingRef = this.lappedElement.id
             element.outgoingRef = this.lappedElement.gatewayRef
             
@@ -910,7 +835,17 @@
             this.addConnection(element.incomingRef, element.id)
             this.addConnection(element.id, element.outgoingRef)
 
-            this.lappedElement.tasks.push(element.id)
+            // robot
+            const isAdd = this.robot.child.some((obj: any) => {
+                let res
+                if(obj.id == this.lappedElement.id) {
+                    res = obj.child.some((ch: any) => ch.id == element.id)
+                }
+                return res
+            })
+            if(!isAdd) {
+                this.updateTasks(this.lappedElement, element)                
+            }
 
             this.lappedElement.stroke = '#000000'
             this.lappedElement = null
