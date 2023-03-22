@@ -36,7 +36,7 @@
                     </v-list-item-group>
                 </v-list>
             </div>
-            <div v-if="elementType.includes('Task')">
+            <div v-if="elementType.includes('Keyword')">
                 <v-tabs v-model="keywordTab">
                     <v-tab v-for="item in keywordList"
                             :key="item.keywordType"
@@ -74,11 +74,27 @@
     export default class ElementList extends Vue {
         @Prop() elementTypes!: any[]
         mounted() {
-            var aa = {
+            console.log("aa")
+            const builtInList = {
+                keywordType: 'Built-In',
+                list: Vue.prototype.$builtInList
+            }
+            this.keywordList.push(builtInList)
+            const collectionList = {
+                keywordType: 'Collections',
+                list: Vue.prototype.$collectionList
+            }
+            this.keywordList.push(collectionList)
+            const fileSystemList = {
+                keywordType: 'File System',
+                list: Vue.prototype.$fileSystemList
+            }
+            this.keywordList.push(fileSystemList)
+            const browserList = {
                 keywordType: 'Browser',
                 list: Vue.prototype.$browserList
             }
-            this.keywordList.push(aa)
+            this.keywordList.push(browserList)
         }
         // data
         public elementType: string = ''
@@ -96,157 +112,157 @@
             'Continue',
         ]
         public keywordList: any[] = [
-            {
-                keywordType: 'Built-in',
-                list: [
-                    'Call Method',
-                    'Catenate',
-                    'Comment',
-                    'Convert To Binary',
-                    'Convert To Boolean',
-                    'Convert To Bytes',
-                    'Convert To Hex',
-                    'Convert To Integer',
-                    'Convert To Number',
-                    'Convert To Octal',
-                    'Convert To String',
-                    'Create Dictionary',
-                    'Create List',
-                    'Evaluate',
-                    'Fail',
-                    'Get Count',
-                    'Get Length',
-                    'Get Library Instance',
-                    'Get Time',
-                    'Get Variable Value',
-                    'Get Variables',
-                    'Import Library',
-                    'Import Resource',
-                    'Import Variables',
-                    'Log',
-                    'Log Variables',
-                    'No Operation',
-                    'Pass Execution',
-                    'Replace Variables',
-                    'Set Global Variable',
-                    'Set Log Level',
-                    'Set Task Variable',
-                    'Set Variable',
-                    'Set Variable If',
-                    'Sleep',
-                    'Wait Until Keyword Succeeds',
-                ]
-            },
-            {
-                keywordType: 'Collections',
-                list: []
-            },
-            {
-                keywordType: 'String',
-                list: []
-            },
-            {
-                keywordType: 'DateTime',
-                list: [
-                    'Add Time To Date',
-                    'Add Time To Time',
-                    'Convert Date',
-                    'Convert Time',
-                    'Get Current Date',
-                    'Subtract Date From Date',
-                    'Subtract Time From Date',
-                    'Subtract Time From Time',
-                ]
-            },
-            {
-                keywordType: 'JSON',
-                list: [
-                    'Add to JSON',
-                    'Convert JSON to String',
-                    'Convert String to JSON',
-                    'Delete from JSON',
-                    'Get value from JSON',
-                    'Get values from JSON',
-                    'Load JSON from file',
-                    'Save JSON to file',
-                    'Update value to JSON',
-                ]
-            },
-            {
-                keywordType: 'File System',
-                list: []
-            },
             // {
-            //     keywordType: 'Browser',
+            //     keywordType: 'Built-in',
             //     list: [
-            //         'Open Available Browser'
+            //         'Call Method',
+            //         'Catenate',
+            //         'Comment',
+            //         'Convert To Binary',
+            //         'Convert To Boolean',
+            //         'Convert To Bytes',
+            //         'Convert To Hex',
+            //         'Convert To Integer',
+            //         'Convert To Number',
+            //         'Convert To Octal',
+            //         'Convert To String',
+            //         'Create Dictionary',
+            //         'Create List',
+            //         'Evaluate',
+            //         'Fail',
+            //         'Get Count',
+            //         'Get Length',
+            //         'Get Library Instance',
+            //         'Get Time',
+            //         'Get Variable Value',
+            //         'Get Variables',
+            //         'Import Library',
+            //         'Import Resource',
+            //         'Import Variables',
+            //         'Log',
+            //         'Log Variables',
+            //         'No Operation',
+            //         'Pass Execution',
+            //         'Replace Variables',
+            //         'Set Global Variable',
+            //         'Set Log Level',
+            //         'Set Task Variable',
+            //         'Set Variable',
+            //         'Set Variable If',
+            //         'Sleep',
+            //         'Wait Until Keyword Succeeds',
             //     ]
             // },
-            {
-                keywordType: 'HTTP',
-                list: [
-                    'Download'
-                ]
-            },
-            {
-                keywordType: 'Excel (Files)',
-                list: []
-            },
-            {
-                keywordType: 'Tables',
-                list: []
-            },
-            {
-                keywordType: 'Windows',
-                list: []
-            },
-            {
-                keywordType: 'Work Items (Control Room)',
-                list: []
-            },
-            {
-                keywordType: 'Vault (Control Room)',
-                list: [
-                    'Get Secret'
-                ]
-            },
-            {
-                keywordType: 'Archive',
-                list: [
-                    'Add To Archive',
-                    'Archive Folder With Tar',
-                    'Archive Folder With Zip',
-                    'Extract Archive',
-                    'Extract File From Archive',
-                    'Get Archive Info',
-                    'List Archive',
-                ]
-            },
-            {
-                keywordType: 'Email (Exchange)',
-                list: [
-                    'Authorize',
-                    'Generate Oauth Url',
-                    'Get Oauth Token',
-                    'Send Message',
-                ]
-            },
-            {
-                keywordType: 'Email (IMAP/SMTP)',
-                list: [
-                    'Authorize',
-                    'Generate Oauth String',
-                    'Generate Oauth Url',
-                    'Get Oauth Token',
-                    'Refresh Oauth Token',
-                    'Save Attachment',
-                    'Send Message',
-                ]
-            },
-            {
-                keywordType: 'PDF',
-                list: []
-            },
+            // {
+            //     keywordType: 'Collections',
+            //     list: []
+            // },
+            // {
+            //     keywordType: 'String',
+            //     list: []
+            // },
+            // {
+            //     keywordType: 'DateTime',
+            //     list: [
+            //         'Add Time To Date',
+            //         'Add Time To Time',
+            //         'Convert Date',
+            //         'Convert Time',
+            //         'Get Current Date',
+            //         'Subtract Date From Date',
+            //         'Subtract Time From Date',
+            //         'Subtract Time From Time',
+            //     ]
+            // },
+            // {
+            //     keywordType: 'JSON',
+            //     list: [
+            //         'Add to JSON',
+            //         'Convert JSON to String',
+            //         'Convert String to JSON',
+            //         'Delete from JSON',
+            //         'Get value from JSON',
+            //         'Get values from JSON',
+            //         'Load JSON from file',
+            //         'Save JSON to file',
+            //         'Update value to JSON',
+            //     ]
+            // },
+            // // {
+            // //     keywordType: 'File System',
+            // //     list: []
+            // // },
+            // // {
+            // //     keywordType: 'Browser',
+            // //     list: [
+            // //         'Open Available Browser'
+            // //     ]
+            // // },
+            // {
+            //     keywordType: 'HTTP',
+            //     list: [
+            //         'Download'
+            //     ]
+            // },
+            // {
+            //     keywordType: 'Excel (Files)',
+            //     list: []
+            // },
+            // {
+            //     keywordType: 'Tables',
+            //     list: []
+            // },
+            // {
+            //     keywordType: 'Windows',
+            //     list: []
+            // },
+            // {
+            //     keywordType: 'Work Items (Control Room)',
+            //     list: []
+            // },
+            // {
+            //     keywordType: 'Vault (Control Room)',
+            //     list: [
+            //         'Get Secret'
+            //     ]
+            // },
+            // {
+            //     keywordType: 'Archive',
+            //     list: [
+            //         'Add To Archive',
+            //         'Archive Folder With Tar',
+            //         'Archive Folder With Zip',
+            //         'Extract Archive',
+            //         'Extract File From Archive',
+            //         'Get Archive Info',
+            //         'List Archive',
+            //     ]
+            // },
+            // {
+            //     keywordType: 'Email (Exchange)',
+            //     list: [
+            //         'Authorize',
+            //         'Generate Oauth Url',
+            //         'Get Oauth Token',
+            //         'Send Message',
+            //     ]
+            // },
+            // {
+            //     keywordType: 'Email (IMAP/SMTP)',
+            //     list: [
+            //         'Authorize',
+            //         'Generate Oauth String',
+            //         'Generate Oauth Url',
+            //         'Get Oauth Token',
+            //         'Refresh Oauth Token',
+            //         'Save Attachment',
+            //         'Send Message',
+            //     ]
+            // },
+            // {
+            //     keywordType: 'PDF',
+            //     list: []
+            // },
         ]
 
         get keywords() {

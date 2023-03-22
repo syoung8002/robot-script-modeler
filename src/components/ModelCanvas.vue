@@ -35,7 +35,7 @@
             <v-layer ref="layer">
                 <div v-for="element in elements" :key="element.id">
                     <component 
-                            v-if="element.type == 'TaskElement' && element.taskType != 'task'"
+                            v-if="element.type == 'KeywordElement' && element.keywordType != 'keyword'"
                             :is="element.type"
                             :config="element"
                             @mousedown="handleStageMouseDown"
@@ -44,16 +44,6 @@
                             @handleModelPanel="handleModelPanel"
                             @handleContextMenu="handleContextMenu"
                     ></component>
-                    <!-- <component 
-                            v-if="element.type == 'TaskElement'"
-                            :is="element.taskType"
-                            :config="element"
-                            @mousedown="handleStageMouseDown"
-                            @movingRelation="movingConnection"
-                            @updateConfig="updateConfig"
-                            @handleModelPanel="handleModelPanel"
-                            @handleContextMenu="handleContextMenu"
-                    ></component> -->
                     <component 
                             v-else
                             :is="element.type"
@@ -135,7 +125,7 @@
     import Konva from 'konva';
     import EventElement from '@/components/designer/modeling/elements/EventElement.vue'
     import GatewayElement from '@/components/designer/modeling/elements/GatewayElement.vue'
-    import TaskElement from '@/components/designer/modeling/elements/TaskElement.vue'
+    import KeywordElement from '@/components/designer/modeling/elements/KeywordElement.vue'
     import ModelRelation from "@/components/designer/modeling/ModelRelation.vue";
     import ScriptPanel from "@/components/designer/modeling/ScriptPanel.vue";
     import ModelPanel from "@/components/designer/modeling/panels/Panel.vue";
@@ -163,7 +153,7 @@
             Konva,
             EventElement,
             GatewayElement,
-            TaskElement,
+            KeywordElement,
             ModelRelation,
             ScriptPanel,
             ModelPanel,
@@ -197,10 +187,10 @@
                 icon: 'mdi-rhombus-outline',
             },
             {
-                name: 'Task',
+                name: 'Keyword',
                 width: 100,
                 height: 80,
-                component: 'TaskElement',
+                component: 'KeywordElement',
                 icon: 'mdi-square-outline',
             },                    
         ];
@@ -294,7 +284,7 @@
                 this.detectedCollision(event, null)
                 const element = this.elements.find((el: any) => el.id === target.id())
                 if(this.lappedElement != null) {
-                    if (this.lappedElement.type.includes('Task')) {
+                    if (this.lappedElement.type.includes('Keyword')) {
                         //
                     } else if (this.lappedElement.type.includes('Gateway')) {
                         if (this.lappedElement.id != element.id) {
@@ -310,12 +300,10 @@
 
         }
         kebabCase(str: string) {
-            console.log(str)
             const result = str
                 .replace(/([a-z])([A-Z])/g, "$1-$2")
                 .replace(/[\s_]+/g, '-')
                 .toLowerCase();
-            console.log(str, result)    
             return result
         }
 
@@ -382,7 +370,7 @@
                 type: componentInfo.component,
                 incomingRef: '',
                 outgoingRef: '',
-                taskType: this.kebabCase(name)
+                keywordType: this.kebabCase(name)
             }
 
             let element2 = null
@@ -392,7 +380,7 @@
             } else if(componentInfo.component.includes('Gateway')) {
                 element.sides = componentInfo.sides
                 element.radius = componentInfo.radius
-                element.tasks = []
+                element.keywords = []
             } else {
                 element.width = componentInfo.width
                 element.height = componentInfo.height
@@ -403,7 +391,7 @@
             this.elements.push(element)
 
             if(componentInfo.component.includes('Gateway') || 
-                componentInfo.component.includes('Task')
+                componentInfo.component.includes('Keyword')
             ) {
                 this.detectedCollision(event, componentInfo)
                 
@@ -454,7 +442,7 @@
             const delEl = this.elements.find((el: any) => el.id === id)
             
             let delList: any = []
-            if (delEl.type.includes('Task')) {
+            if (delEl.type.includes('Keyword')) {
                 this.elements.forEach((el: any) => {
                     if (el.id == id) {
                         delList.push(el.id)
@@ -465,7 +453,7 @@
                     if (el.id == id || el.gatewayRef == id) {
                         delList.push(el.id)
                     }
-                    if (el.type.includes('Task') && (el.incomingRef == id || el.outgoingRef == id)) {
+                    if (el.type.includes('Keyword') && (el.incomingRef == id || el.outgoingRef == id)) {
                         delList.push(el.id)
                     }
                 })
@@ -474,17 +462,17 @@
                     if (el.id == id || el.incomingRef == id || el.outgoingRef == id) {
                         delList.push(el.id)
                         if(el.type.includes('Gateway')) {
-                            const taskList = this.elements.filter((obj: any) => 
-                                obj.type.includes('Task') && 
+                            const keywordList = this.elements.filter((obj: any) => 
+                                obj.type.includes('Keyword') && 
                                 (obj.incomingRef == el.id || obj.outgoingRef == el.id)
                             )
-                            taskList.forEach((task: any) => {
-                                delList.push(task.id)
-                                if (!delList.includes(task.incomingRef)) {
-                                    delList.push(task.incomingRef)
+                            keywordList.forEach((keyword: any) => {
+                                delList.push(keyword.id)
+                                if (!delList.includes(keyword.incomingRef)) {
+                                    delList.push(keyword.incomingRef)
                                 }
-                                if (!delList.includes(task.outgoingRef)) {
-                                    delList.push(task.outgoingRef)
+                                if (!delList.includes(keyword.outgoingRef)) {
+                                    delList.push(keyword.outgoingRef)
                                 }
                             })
                         }
@@ -561,7 +549,7 @@
             let shape: any = {}
 
             if (type && type.component) {
-                if (type.component.includes('Task')) {
+                if (type.component.includes('Keyword')) {
                     shape = {
                         x: event.x,
                         y: event.y,
@@ -622,11 +610,11 @@
             }
 
             this.elements.forEach((el: any) => {
-                if(!el.type.includes('Event') && shape.type.includes('Task')) {
+                if(!el.type.includes('Event') && shape.type.includes('Keyword')) {
                     el.stroke = '#000000'
                     if (shape.id && shape.id != el.id) {
                         let shape2 = {}
-                        if (el.type.includes('Task')) {
+                        if (el.type.includes('Keyword')) {
                             shape2 = {
                                 id: el.id,
                                 x: el.x + el.width / 2,
@@ -689,7 +677,7 @@
                 x: Math.floor(source.x),
                 y: Math.floor(source.y),
             }
-            if (source.type.includes('Task')) {
+            if (source.type.includes('Keyword')) {
                 from.x = Math.floor(source.x + source.width)
                 from.y = Math.floor(source.y + source.height / 2)
             } else if (source.type.includes('Event') || source.type.includes('Gateway')) {
@@ -702,7 +690,7 @@
                 x: Math.floor(target.x),
                 y: Math.floor(target.y),
             }
-            if (target.type.includes('Task')) {
+            if (target.type.includes('Keyword')) {
                 to.x = Math.floor(target.x)
                 to.y = Math.floor(target.y + target.height / 2)
             } else if (target.type.includes('Event') || target.type.includes('Gateway')) {
@@ -759,8 +747,8 @@
                 const source = this.elements.find((el: any) => el.id === line.from)
                 const target = this.elements.find((el: any) => el.id === line.to)
                 if(source.type.includes('Gateway') && target.type.includes('Gateway')) {
-                    source.tasks.push(this.divisiveElement.id)
-                    target.tasks.push(this.divisiveElement.id)
+                    source.keywords.push(this.divisiveElement.id)
+                    target.keywords.push(this.divisiveElement.id)
                 }
             
                 this.addConnection(line.from, this.divisiveElement.id)
@@ -786,7 +774,7 @@
                     if(r.points[1].x > r.points[0].x) {
                         r.points[0].x = val.width ? val.x + val.width : val.x + val.radius
                         
-                        if(toEl.type.includes('Task')) {
+                        if(toEl.type.includes('Keyword')) {
                             r.points[1].x = toEl.x
                         
                         } else if (toEl.type.includes('Event') || 
@@ -798,7 +786,7 @@
                     } else {
                         r.points[0].x = val.width ? val.x : val.x - val.radius
                         
-                        if(toEl.type.includes('Task')) {
+                        if(toEl.type.includes('Keyword')) {
                             r.points[1].x = toEl.x + toEl.width
                         
                         } else if (toEl.type.includes('Event') || 
@@ -808,7 +796,7 @@
                         }
                     }
 
-                    if(val.type.includes('Task')) {
+                    if(val.type.includes('Keyword')) {
                         r.points[0].y = val.y + val.height / 2
                     } else {
                         r.points[0].y = val.y
@@ -820,7 +808,7 @@
                     if(r.points[0].x > r.points[1].x) {
                         r.points[1].x = val.width ? val.x + val.width : val.x + val.radius
                         
-                        if(fromEl.type.includes('Task')) {
+                        if(fromEl.type.includes('Keyword')) {
                             r.points[0].x = fromEl.x
 
                         } else if (fromEl.type.includes('Event') || 
@@ -832,7 +820,7 @@
                     } else {
                         r.points[1].x = val.width ? val.x : val.x - val.radius
                         
-                        if(fromEl.type.includes('Task')) {
+                        if(fromEl.type.includes('Keyword')) {
                             r.points[0].x = fromEl.x + fromEl.width
 
                         } else if (fromEl.type.includes('Event') || 
@@ -842,7 +830,7 @@
                         }
                     }
 
-                    if(val.type.includes('Task')) {
+                    if(val.type.includes('Keyword')) {
                         r.points[1].y = val.y + val.height / 2
                     } else {
                         r.points[1].y = val.y
@@ -888,15 +876,15 @@
             element.incomingRef = this.lappedElement.id
             element.outgoingRef = this.lappedElement.gatewayRef
             
-            let tasks = this.elements.filter((el: any) => 
+            let keywords = this.elements.filter((el: any) => 
                 el.id != element.id && el.incomingRef == element.incomingRef)
             
-            if (tasks.length > 0) {
-                tasks = tasks.sort((a: any, b: any) => {
+            if (keywords.length > 0) {
+                keywords = keywords.sort((a: any, b: any) => {
                     return a.y - b.y
                 })
-                element.x = tasks[0].x
-                element.y = tasks[tasks.length - 1].y + 150
+                element.x = keywords[0].x
+                element.y = keywords[keywords.length - 1].y + 150
             } else {
                 const incomingEl = this.elements.find((el: any) => 
                     el.id == element.incomingRef)
@@ -910,7 +898,7 @@
             this.addConnection(element.incomingRef, element.id)
             this.addConnection(element.id, element.outgoingRef)
 
-            this.lappedElement.tasks.push(element.id)
+            this.lappedElement.keywords.push(element.id)
 
             this.lappedElement.stroke = '#000000'
             this.lappedElement = null

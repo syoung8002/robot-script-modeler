@@ -7,7 +7,7 @@
             KeywordElement,
         }
     })
-    export default class ChooseFile extends Mixins(KeywordElement) {
+    export default class ClickLink extends Mixins(KeywordElement) {
         mounted() {
         }
     }

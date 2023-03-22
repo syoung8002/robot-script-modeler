@@ -1,19 +1,25 @@
 <template>
-    <div>
-        작업 필요
-    </div>
+    <div class="ma-2 pa-2">
+            <v-text-field
+                label="Value"
+                v-model="value.value"
+                outlined
+                hint="Value for cookie"
+                persistent-hint
+            ></v-text-field>
+        </div>
     
 </template>
 
 <script lang="ts">
     import { Component, Mixins } from "vue-property-decorator"
-    import TaskPanel from '@/components/designer/modeling/panels/TaskPanel.vue'
+    import KeywordPanel from '@/components/designer/modeling/panels/KeywordPanel.vue'
 
     @Component({
         components: {
-            TaskPanel,
+            KeywordPanel,
         }
     })
-    export default class ChooseFilePanel extends Mixins(TaskPanel) {
+    export default class ChooseFilePanel extends Mixins(KeywordPanel) {
     }
 </script>

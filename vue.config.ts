@@ -7,6 +7,9 @@ module.exports = {
     transpileDependencies: [
       'vuetify',
     ],
+    resolve: {
+        extensions: [".js", ".ts"]
+      },
     runtimeCompiler: true,
     chainWebpack: config => {
         config.plugin('monaco-editor').use(MonacoWebpackPlugin, 

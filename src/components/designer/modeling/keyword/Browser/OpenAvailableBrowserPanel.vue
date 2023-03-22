@@ -22,13 +22,13 @@
 
 <script lang="ts">
     import { Component, Mixins } from "vue-property-decorator"
-    import TaskPanel from '@/components/designer/modeling/panels/TaskPanel.vue'
+    import KeywordPanel from '@/components/designer/modeling/panels/KeywordPanel.vue'
 
     @Component({
         components: {
-            TaskPanel,
+            KeywordPanel,
         }
     })
-    export default class OpenAvailableBrowserPanel extends Mixins(TaskPanel) {
+    export default class OpenAvailableBrowserPanel extends Mixins(KeywordPanel) {
     }
 </script>

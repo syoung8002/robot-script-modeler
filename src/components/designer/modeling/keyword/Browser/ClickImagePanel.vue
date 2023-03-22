@@ -14,6 +14,6 @@
             KeywordPanel,
         }
     })
-    export default class CapturePageScreenshotPanel extends Mixins(KeywordPanel) {
+    export default class ClickImagePanel extends Mixins(KeywordPanel) {
     }
 </script>

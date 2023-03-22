@@ -27,7 +27,6 @@
         @Watch("value", {immediate: true, deep: true})
         public updatedValue(value: object, oldValue: object) {
             if(value) {
-                console.log(value)
                 this.$emit('updateConfig', value)
             }
         }
@@ -64,7 +63,7 @@
             if (e.target instanceof Konva.Text) {
                 this.value.x = Math.floor(e.target.x())
                 
-                if(this.config.type.includes('task')) {
+                if(this.config.type.includes('keyword')) {
                     this.value.y = Math.floor(e.target.y() - this.config.height/2 + 10)
                 } else {
                     this.value.y = Math.floor(e.target.y())

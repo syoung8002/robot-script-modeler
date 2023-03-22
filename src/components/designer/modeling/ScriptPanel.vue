@@ -10,7 +10,10 @@
                     Robot Script
                 </v-card-title>
                 <v-card-text>
-                    {{ scriptText }}
+                    <span v-for="(line, index) in scriptTextLines" :key="index">
+                        {{ line }}
+                        <br />
+                    </span>
                     <!-- <MonacoEditor
                             width="600"
                             height="600"
@@ -44,6 +47,10 @@
         public scriptText: string = ''
         public idGlobal: number = 1
 
+        get scriptTextLines() {
+            return this.scriptText.split("\n");
+        }
+
         robot: Task = new Robot(1, this.taskName, [])
 
         mounted () {
@@ -55,7 +62,7 @@
         }
         generateScript() {
             let tasks: any[] = this.elements.filter((el: any) => 
-                el.type.includes('Task') || (el.type.includes('Gateway') && !el.endGateway))
+                el.type.includes('Keyword') || (el.type.includes('Gateway') && !el.endGateway))
             
             let gateways = this.elements.find((el: any) => el.type.includes('Gateway'))
             if (gateways) {
@@ -75,7 +82,7 @@
             })
 
             tasks.forEach((el: any) => {
-                if (el.type.includes('Task')) {
+                if (el.type.includes('Keyword')) {
                     this.robot.child.push(new Task(this.idGlobal++, el.name))
                 }
                 if (el.type.includes('Gateway')) {
