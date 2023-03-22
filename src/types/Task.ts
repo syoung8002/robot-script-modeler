@@ -19,6 +19,15 @@ class Task extends Construct{
         this.child = child;
     }
 
+    public setName(name: string): any {
+        this.name = name
+    }
+
+    public delChild(delList: Array<Number>, child: Array<Task>) {
+        child = child.filter((obj) => {!delList.includes(obj.id)})
+        return child
+    }
+
     public clone():any {
 
         let cloneObj = Object.create(this);

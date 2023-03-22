@@ -1,14 +1,20 @@
 <template>
     <div>
         <v-card class="tools" max-width="100">
-            <div v-for="item in elementTypes" 
-                    :key="item.name"
-                    class="tool-item"
-                    draggable="true"
-                    @dragend="addKeyword($event, item)"
-                    @click="openKeywordDialog($event, item.name)"
-            >
-                <v-icon>{{ item.icon }}</v-icon>
+            <div v-for="item in elementTypes" :key="item.name">
+                <div v-if="item.component.includes('Event')"
+                        class="tool-item"
+                        draggable="true"
+                        @dragend="addKeyword($event, item)"
+                >
+                    <v-icon>{{ item.icon }}</v-icon>
+                </div>
+                <div v-else
+                        class="tool-item"
+                        @click="openKeywordDialog($event, item.name)"
+                >
+                    <v-icon>{{ item.icon }}</v-icon>
+                </div>
             </div>
         </v-card>
 
@@ -26,9 +32,7 @@
                         >
                             <v-list-item-title
                                     draggable="true"
-                                    @drag="selectedKeyword($event, item)"
                                     @dragend="addKeyword($event, item)"
-                                    @click="addKeyword($event, item)"
                             >
                                 {{ item }}
                             </v-list-item-title>
@@ -53,9 +57,7 @@
                         >
                             <v-list-item-title
                                     draggable="true"
-                                    @drag="selectedKeyword($event, item)"
                                     @dragend="addKeyword($event, item)"
-                                    @click="addKeyword($event, item)"
                             >
                                 {{ item }}
                             </v-list-item-title>
@@ -279,10 +281,6 @@
             this.elementType = type
             this.x = event.clientX
             this.y = event.clientY
-        }
-
-        selectedKeyword(event: any, item: any) {
-            // this.$emit('selectedKeyword', event, item)
         }
 
         addKeyword(event: any, value: any) {

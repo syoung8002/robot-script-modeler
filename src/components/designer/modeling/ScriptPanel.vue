@@ -29,20 +29,11 @@
 </template>
 
 <script lang="ts">
-    import { Vue, Component, Prop, Watch } from "vue-property-decorator"
-    // import MonacoEditor from 'monaco-editor-vue';
-    import { Robot, SeqTask, Task, IfTask, ForTask, Keyword, CallKeyword } from "@/types/Task";
-
-    // @Component({
-    //     components: {
-    //         MonacoEditor,
-    //     }
-    // })
+    import { Vue, Component, Prop } from "vue-property-decorator"
 
     @Component
     export default class ScriptPanel extends Vue {
-        @Prop() public elements!: any[];
-        @Prop() public taskName!: string;
+        @Prop() public robot!: any;
 
         public scriptText: string = ''
         public idGlobal: number = 1
@@ -101,12 +92,7 @@
             })
 
             this.scriptText = this.robot.toRobot(0)
-
-        }
-
-        @Watch("robot", {immediate: true, deep: true})
-        log() {
-            console.log(this.robot.toRobot(0))
+            console.log(this.scriptText)
         }
     }
 </script>
