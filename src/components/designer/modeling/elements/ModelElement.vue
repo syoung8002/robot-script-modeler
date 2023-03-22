@@ -51,9 +51,6 @@
         handleTransformEnd(e: any) {
             const newWidth = Math.floor(this.value.width * e.target.scaleX())
             const newHeight = Math.floor(this.value.height * e.target.scaleY())
-            console.log(newWidth, newHeight)
-            console.log(e.target.width(), e.target.height())
-
             this.movingRelation(this.value)
         }
         movingRelation(val: any) {

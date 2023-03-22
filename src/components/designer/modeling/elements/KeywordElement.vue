@@ -30,9 +30,6 @@
     export default class KeywordElement extends Mixins(ModelElement) {
 
         mounted() {
-            // console.log("**********")
-            // console.log(this.value)
-            // console.log("**********")
         }
 
     }

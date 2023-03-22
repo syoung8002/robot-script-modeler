@@ -31,6 +31,7 @@
     export default class Keyword extends Mixins(Panel) {
         mounted() {
             console.log(this.keywordType)
+            console.log(this.value)
         }
     }
 </script>

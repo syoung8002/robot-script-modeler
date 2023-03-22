@@ -306,6 +306,7 @@
                 type: componentInfo.component,
                 incomingRef: '',
                 outgoingRef: '',
+                properties: {},
                 keywordType: this.kebabCase(name)
             }
 

@@ -76,7 +76,6 @@
     export default class ElementList extends Vue {
         @Prop() elementTypes!: any[]
         mounted() {
-            console.log("aa")
             const builtInList = {
                 keywordType: 'Built-In',
                 list: Vue.prototype.$builtInList

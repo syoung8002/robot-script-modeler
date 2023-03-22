@@ -49,6 +49,7 @@
 
         // computed
         get config() {
+            console.log(this.value)
             return this.value
         }
         

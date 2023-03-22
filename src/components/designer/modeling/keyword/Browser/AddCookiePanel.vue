@@ -63,12 +63,17 @@
 <script lang="ts">
     import { Component, Mixins } from "vue-property-decorator"
     import KeywordPanel from '@/components/designer/modeling/panels/KeywordPanel.vue'
+// import { onMounted } from "vue";
 
     @Component({
         components: {
             KeywordPanel,
         }
     })
+    
     export default class AddCookiePanel extends Mixins(KeywordPanel) {
+        mounted() {
+            console.log(this.value)
+        }
     }
 </script>
