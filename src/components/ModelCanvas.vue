@@ -67,9 +67,13 @@
                 </div>
 
                 <div v-for="(relation, idx) in relations" :key="'line_'+idx">
-                    <model-relation
+                    <component
+                            :is="relation.type"
                             :config="relation"
-                    ></model-relation>
+                    ></component>
+                    <!-- <model-relation
+                            :config="relation"
+                    ></model-relation> -->
                 </div>
 
                 <v-transformer ref="transformer" />
@@ -79,7 +83,8 @@
         <element-list
                 :elementTypes="elementTypes"
                 @selectedKeyword="detectedCollision"
-                @addKeyword="addElement"
+                @addElement="addElement"
+                ref="elementList"
         ></element-list>
 
         <!-- Robot Script Panel-->
@@ -115,7 +120,7 @@
     import { Vue, Component, Watch } from "vue-property-decorator"
     import Konva from 'konva';
     import EventElement from '@/components/designer/modeling/elements/EventElement.vue'
-    import GatewayElement from '@/components/designer/modeling/elements/GatewayElement.vue'
+    import ControlElement from '@/components/designer/modeling/elements/ControlElement.vue'
     import TaskElement from '@/components/designer/modeling/elements/TaskElement.vue'
     import ModelRelation from "@/components/designer/modeling/ModelRelation.vue";
     import ScriptPanel from "@/components/designer/modeling/ScriptPanel.vue";
@@ -124,7 +129,7 @@
     import { Stage } from 'konva/lib/Stage';
     import { Layer } from "konva/lib/Layer";
     import { Node } from 'konva/lib/Node';
-    import { Robot, SeqTask, Task, IfTask, ForTask, Keyword, CallKeyword } from "@/types/Task";
+    import { Robot, SeqTask, Task, IfTask, ForTask, WhileTask, Keyword, CallKeyword } from "@/types/Task";
 
     interface KonvaLayer extends Vue {
         getNode (): Layer
@@ -145,7 +150,7 @@
         components: {
             Konva,
             EventElement,
-            GatewayElement,
+            ControlElement,
             TaskElement,
             ModelRelation,
             ScriptPanel,
@@ -167,6 +172,7 @@
             stage: KonvaStage
             transformer: KonvaTransformer
             layer: KonvaLayer
+            elementList: ElementList
         }
         elementTypes: any[] = [
             {
@@ -176,10 +182,10 @@
                 icon: 'mdi-circle-outline',
             },
             {
-                name: 'Gateway',
+                name: 'Control',
                 sides: 4,
                 radius: 30,
-                component: 'GatewayElement',
+                component: 'ControlElement',
                 icon: 'mdi-rhombus-outline',
             },
             {
@@ -225,9 +231,10 @@
                 this.detectedCollision(event, null)
                 const element = this.elements.find((el: any) => el.id === target.id())
                 if(this.lappedElement != null) {
-                    if (this.lappedElement.type.includes('Gateway')) {
+                    if (this.lappedElement.type.includes('Control')) {
                         if (this.lappedElement.id != element.id) {
-                            this.addGatewayConnection(element)
+                            this.robot.child = this.robot.delChild([element.id], this.robot.child)
+                            this.addControlConnection(element)
                         }
                     }
                 }
@@ -246,13 +253,26 @@
             this.robot.setName(val)
         }
 
+        @Watch("elements", {immediate: true, deep: true})
+        updateRobot(val: any) {
+            val.forEach((el: any) => {
+                const childTask = this.robot.findChildTask(el.id, this.robot.child)
+                if(childTask) {
+                    childTask.setProperty(el)
+                    if (childTask.child.length > 0) {
+                        childTask.child = this.robot.alignChild(childTask.child)
+                    }
+                }
+            })
+        }
+
         kebabCase(str: string) {
-            console.log(str)
+            // console.log(str)
             const result = str
                 .replace(/([a-z])([A-Z])/g, "$1-$2")
                 .replace(/[\s_]+/g, '-')
                 .toLowerCase();
-            console.log(str, result)    
+            // console.log(str, result)    
             return result
         }
 
@@ -316,33 +336,43 @@
                 type: componentInfo.component,
                 incomingRef: '',
                 outgoingRef: '',
-                taskType: this.kebabCase(name)
             }
 
             if(componentInfo.component.includes('Event')) {
-                element.name = 'Start Event'
+                element.name = 'Start'
                 element.radius = componentInfo.radius
-            } else if(componentInfo.component.includes('Gateway')) {
+            } else if(componentInfo.component.includes('Control')) {
                 element.sides = componentInfo.sides
                 element.radius = componentInfo.radius
+                element.controlType = name
 
-                if (name.includes('FOR')) {
+                if (name.includes('For')) {
+                    element.itemVarName = 'item'
+                    element.iterationVarName = 'items'
                     this.robot.child.push(new ForTask(element.id, name, []))
-                } else if (name.includes('IF')) {
+                } else if (name.includes('If')) {
+                    element.conditions = []
+                    this.addControlCondition(element, null)
                     this.robot.child.push(new IfTask(element.id, name, []))
+                } else if (name.includes('While')) {
+                    element.limit = ''
+                    element.condition = {}
+                    this.addControlCondition(element, null)
+                    this.robot.child.push(new WhileTask(element.id, name, []))
                 }
 
             } else {
                 element.width = componentInfo.width
                 element.height = componentInfo.height
                 element.cornerRadius = 10
+                element.taskType = this.kebabCase(name)
 
                 this.robot.child.push(new Task(element.id, name, []))
             }
             
             this.elements.push(element)
 
-            if(componentInfo.component.includes('Gateway') || 
+            if(componentInfo.component.includes('Control') || 
                 componentInfo.component.includes('Task')
             ) {
                 this.detectedCollision(event, componentInfo)
@@ -350,34 +380,35 @@
                 if (this.dividedLines.length > 0) {
                     this.divisiveElement = element
                     this.divideConnection()
+                }
 
+                if (componentInfo.component.includes('Control')) {
                     let element2 = null
-                    if(componentInfo.component.includes('Gateway')) {
-                        element2 = JSON.parse(JSON.stringify(element))
-                        element2.x += 500
-                        element2.id = this.uuid()
-                        element2.gatewayRef = element.id
-                        element2.endGateway = true
-                        element.gatewayRef = element2.id
-                        
-                        this.elements.push(element2)
-                        this.addConnection(element.id, element2.id)
+                    
+                    element2 = JSON.parse(JSON.stringify(element))
+                    element2.x += 500
+                    element2.id = this.uuid()
+                    element2.gatewayRef = element.id
+                    element2.endControl = true
+                    element.gatewayRef = element2.id
+                    
+                    this.elements.push(element2)
+                    this.addConnection(element.id, element2.id)
 
-                        const obj = {
-                            x: element2.x,
-                            y: element2.y,
-                        }
-                        this.detectedCollision(obj, componentInfo)
-
-                        this.divisiveElement = element2
-                        this.divideConnection()
+                    const obj = {
+                        x: element2.x,
+                        y: element2.y,
                     }
+                    this.detectedCollision(obj, componentInfo)
+
+                    this.divisiveElement = element2
+                    this.divideConnection()
                 }
             } else {
                 let element2 = null
                 element2 = JSON.parse(JSON.stringify(element))
                 element2.x += 1000
-                element2.name = 'End Event'
+                element2.name = 'End'
                 element2.strokeWidth = 5
                 element2.id = this.uuid()
                 element2.eventRef = element.id
@@ -399,7 +430,7 @@
                         delList.push(el.id)
                     }
                 })
-            } else if (delEl.type.includes('Gateway')) {
+            } else if (delEl.type.includes('Control')) {
                 this.elements.forEach((el: any) => {
                     if (el.id == id || el.gatewayRef == id) {
                         delList.push(el.id)
@@ -412,7 +443,7 @@
                 this.elements.forEach((el: any) => {
                     if (el.id == id || el.incomingRef == id || el.outgoingRef == id) {
                         delList.push(el.id)
-                        if(el.type.includes('Gateway')) {
+                        if(el.type.includes('Control')) {
                             const taskList = this.elements.filter((obj: any) => 
                                 obj.type.includes('Task') && 
                                 (obj.incomingRef == el.id || obj.outgoingRef == el.id)
@@ -450,13 +481,7 @@
             })
 
             // robot
-            this.robot.child.forEach((obj: any) => {
-                if(obj.id == id) {
-                    this.robot.child = this.robot.delChild(delList, this.robot.child)
-                } else if(obj.id == delEl.incomingRef) {
-                    obj.child = this.robot.delChild(delList, obj.child)
-                }
-            })
+            this.robot.child = this.robot.delChild(delList, this.robot.child)
             
             this.handleContextMenu(null)
         }
@@ -477,6 +502,7 @@
                 this.isOpenScript = false
             }
 
+            this.$refs.elementList.closeKeywordDialog()
             this.handleModelPanel(null)
             this.handleContextMenu(null)
         }
@@ -495,7 +521,7 @@
                         xRadius: type.width/2,
                         yRadius: type.height/2,
                     }
-                } else if (type.component.includes('Event') || type.component.includes('Gateway')) {
+                } else if (type.component.includes('Event') || type.component.includes('Control')) {
                     shape = {
                         x: event.x,
                         y: event.y,
@@ -557,7 +583,7 @@
                                 xRadius: el.width / 2,
                                 yRadius: el.height / 2
                             }
-                        } else if (el.type.includes('Gateway')) {
+                        } else if (el.type.includes('Control')) {
                             shape2 = {
                                 id: el.id,
                                 x: el.x,
@@ -599,14 +625,12 @@
                 return
             }
 
-            const me = this
             const source = this.elements.find((el: any) => el.id === fromId)
             const target = this.elements.find((el: any) => el.id === toId)
             
             if (!source || !target) {
                 return
             }
-
 
             const from = {
                 x: Math.floor(source.x),
@@ -615,7 +639,7 @@
             if (source.type.includes('Task')) {
                 from.x = Math.floor(source.x + source.width)
                 from.y = Math.floor(source.y + source.height / 2)
-            } else if (source.type.includes('Event') || source.type.includes('Gateway')) {
+            } else if (source.type.includes('Event') || source.type.includes('Control')) {
                 from.x = Math.floor(source.x + source.radius)
                 from.y = Math.floor(source.y)
             }
@@ -628,11 +652,17 @@
             if (target.type.includes('Task')) {
                 to.x = Math.floor(target.x)
                 to.y = Math.floor(target.y + target.height / 2)
-            } else if (target.type.includes('Event') || target.type.includes('Gateway')) {
+            } else if (target.type.includes('Event') || target.type.includes('Control')) {
                 to.x = Math.floor(target.x - target.radius)
                 to.y = Math.floor(target.y)
             }
             target.incomingRef = fromId
+
+            if (source.type.includes('Control') && target.type.includes('Control')) {
+                if (source.controlType == 'For' && target.controlType == 'For') {
+                    this.addForTaskConnection(source, target)
+                }
+            }
 
             const newConn = {
                 name: 'relation',
@@ -640,12 +670,36 @@
                 to: toId,
                 points: [ from, to ],
                 stroke: '#000000',
-                strokeWidth: 2
+                strokeWidth: 2,
+                type: 'model-relation'
             }
 
             const newLines = this.relations.concat(newConn)
             this.relations = newLines
 
+        }
+        addForTaskConnection(source: any, target: any) {
+            const from = {
+                x: Math.floor(target.x),
+                y: Math.floor(target.y - target.radius),
+            }
+            const to = {
+                x: Math.floor(source.x),
+                y: Math.floor(source.y - source.radius),
+            }
+
+            const newConn = {
+                name: 'relation',
+                from: target.id,
+                to: source.id,
+                points: [ from, to ],
+                stroke: '#000000',
+                strokeWidth: 2,
+                type: 'for-task-relation'
+            }
+
+            const newLines = this.relations.concat(newConn)
+            this.relations = newLines
         }
         deleteConnection(id: string) {
             if (!id) {
@@ -679,10 +733,46 @@
             this.dividedLines.forEach((line: any) => {
                 const source = this.elements.find((el: any) => el.id === line.from)
                 const target = this.elements.find((el: any) => el.id === line.to)
-                if(source.type.includes('Gateway') && target.type.includes('Gateway')) {
+                if(source.type.includes('Control') && target.type.includes('Control')) {
+                    if(source.controlType == 'If') {
+                        if(source.conditions.length > 1 || source.conditions.length < 1) {
+                            this.addControlCondition(source, this.divisiveElement)
+                        } else {
+                            let keywords = source.conditions[0].keywords
+                            keywords.push(this.divisiveElement.name)
+                            keywords = keywords.filter((keyword: string) => keyword != '')
+                            source.conditions[0].keywords = keywords
+                        }
+                    }
                     this.updateTasks(source, this.divisiveElement)
+
+                } else if(target.type.includes('Control')) {
+                    let controlTask = this.elements.find((el: any) => el.id === target.gatewayRef)
+                    if(source.controlType == 'If') {
+                        controlTask.conditions.forEach((condition: any) => {
+                            if(condition.keywords.includes(source.name)) {
+                                condition.keywords.push(this.divisiveElement.name)
+                            }
+                        })
+                    }
+                    this.updateTasks(controlTask, this.divisiveElement)
+
+                } else if(source.type.includes('Control')) {
+                    if(source.controlType == 'If') {
+                        source.conditions.forEach((condition: any) => {
+                            if(condition.keywords.includes(source.name)) {
+                                condition.keywords.push(this.divisiveElement.name)
+                            }
+                        })
+                    }
+                    this.updateTasks(source, this.divisiveElement)
+
+                } else {
+                    if(this.divisiveElement.type.includes('Task')) {
+                        this.updateTasks(source, this.divisiveElement)
+                    }
                 }
-            
+
                 this.addConnection(line.from, this.divisiveElement.id)
                 this.addConnection(this.divisiveElement.id, line.to)
             })
@@ -696,7 +786,11 @@
         updateTasks(parent: any, child: any) {
             this.robot.child = this.robot.child.filter((task: any) => task.id != child.id)
             var parentTask = this.robot.child.find((task: any) => task.id == parent.id)
-            parentTask?.child.push(new Task(child.id, child.name, child.child))
+            if(parentTask) {
+                parentTask?.child.push(new Task(child.id, child.name, child.child))
+            } else {
+                this.robot.child.push(new Task(child.id, child.name, child.child))
+            }
         }
 
         movingConnection(val: any) {
@@ -707,6 +801,19 @@
             }
 
             this.relations.forEach((r: any) => {
+                if (!r.type.includes('model')) {
+                    const fromEl = this.elements.find((el: any) => el.id === r.from)
+                    const toEl = this.elements.find((el: any) => el.id === r.to)
+                    if (fromEl.type.includes('Control') && toEl.type.includes('Control')) {
+                        if (fromEl.controlType == 'For') {
+                            r.points[0].x = fromEl.x
+                            r.points[0].y = fromEl.y - fromEl.radius
+                            r.points[1].x = toEl.x
+                            r.points[1].y = toEl.y - toEl.radius
+                        }
+                    }
+                    return
+                }
                 if (r.from === val.id) {
                     const toEl = this.elements.find((el: any) => el.id === r.to)
 
@@ -717,7 +824,7 @@
                             r.points[1].x = toEl.x
                         
                         } else if (toEl.type.includes('Event') || 
-                                toEl.type.includes('Gateway')
+                                toEl.type.includes('Control')
                         ) {
                             r.points[1].x = toEl.x - toEl.radius
                         }
@@ -729,7 +836,7 @@
                             r.points[1].x = toEl.x + toEl.width
                         
                         } else if (toEl.type.includes('Event') || 
-                                toEl.type.includes('Gateway')
+                                toEl.type.includes('Control')
                         ) {
                             r.points[1].x = toEl.x + toEl.radius
                         }
@@ -751,7 +858,7 @@
                             r.points[0].x = fromEl.x
 
                         } else if (fromEl.type.includes('Event') || 
-                                fromEl.type.includes('Gateway')
+                                fromEl.type.includes('Control')
                         ) {
                             r.points[0].x = fromEl.x - fromEl.radius
                         }
@@ -763,7 +870,7 @@
                             r.points[0].x = fromEl.x + fromEl.width
 
                         } else if (fromEl.type.includes('Event') || 
-                                fromEl.type.includes('Gateway')
+                                fromEl.type.includes('Control')
                         ) {
                             r.points[0].x = fromEl.x + fromEl.radius
                         }
@@ -780,8 +887,8 @@
         }
         reconnectLine() {
             const me = this
-            const startEv = this.elements.find((el: any) => el.name == 'Start Event')
-            const endEv = this.elements.find((el: any) => el.name == 'End Event')
+            const startEv = this.elements.find((el: any) => el.name == 'Start')
+            const endEv = this.elements.find((el: any) => el.name == 'End')
 
             if( !startEv || !endEv ) {
                 return
@@ -806,34 +913,46 @@
                 this.addConnection(desc[0].id, endEv.id)
             }
         }
-        addGatewayConnection(element: any) {
+        addControlConnection(element: any) {
             const me = this
             this.deleteConnection(element.id)
 
-            element.incomingRef = this.lappedElement.id
-            element.outgoingRef = this.lappedElement.gatewayRef
-            
-            let tasks = this.elements.filter((el: any) => 
-                el.id != element.id && el.incomingRef == element.incomingRef)
-            
-            if (tasks.length > 0) {
-                tasks = tasks.sort((a: any, b: any) => {
-                    return a.y - b.y
-                })
-                element.x = tasks[0].x
-                element.y = tasks[tasks.length - 1].y + 150
-            } else {
-                const incomingEl = this.elements.find((el: any) => 
-                    el.id == element.incomingRef)
-                const outgoingEl = this.elements.find((el: any) => 
-                    el.id == element.outgoingRef)
-                const random = outgoingEl.x - incomingEl.x
-                element.x = incomingEl.x + Math.floor(Math.random() * random)
-                element.y = incomingEl.y - 150
-            }
+            if (this.lappedElement.controlType == 'If') {
+                element.incomingRef = this.lappedElement.id
+                element.outgoingRef = this.lappedElement.gatewayRef
+                
+                let tasks = this.elements.filter((el: any) => 
+                    el.id != element.id && el.incomingRef == element.incomingRef)
+                
+                if (tasks.length > 0) {
+                    tasks = tasks.sort((a: any, b: any) => {
+                        return a.y - b.y
+                    })
+                    element.x = tasks[0].x
+                    element.y = tasks[tasks.length - 1].y + 150
+                } else {
+                    const incomingEl = this.elements.find((el: any) => 
+                        el.id == element.incomingRef)
+                    const outgoingEl = this.elements.find((el: any) => 
+                        el.id == element.outgoingRef)
+                    const random = outgoingEl.x - incomingEl.x
+                    element.x = incomingEl.x + Math.floor(Math.random() * random)
+                    element.y = incomingEl.y - 150
+                }
 
-            this.addConnection(element.incomingRef, element.id)
-            this.addConnection(element.id, element.outgoingRef)
+                this.addConnection(element.incomingRef, element.id)
+                this.addConnection(element.id, element.outgoingRef)
+
+            } else if (this.lappedElement.controlType == 'For') {
+                element.incomingRef = this.lappedElement.id
+                element.outgoingRef = this.lappedElement.gatewayRef
+                
+            } else if (this.lappedElement.controlType == 'While') {
+                element.incomingRef = this.lappedElement.id
+                element.outgoingRef = this.lappedElement.gatewayRef
+                
+                // this.addConnection(element.incomingRef, element.id)
+            }
 
             // robot
             const isAdd = this.robot.child.some((obj: any) => {
@@ -844,7 +963,11 @@
                 return res
             })
             if(!isAdd) {
-                this.updateTasks(this.lappedElement, element)                
+                if (this.lappedElement.controlType == 'If') {
+                    this.addControlCondition(this.lappedElement, element)
+                } else if (this.lappedElement.controlType == 'For' || this.lappedElement.controlType == 'While') {
+                    this.updateTasks(this.lappedElement, element)
+                }
             }
 
             this.lappedElement.stroke = '#000000'
@@ -856,7 +979,38 @@
             })
         }
 
+        addControlCondition(parent: any, child: any) {
+            let condition = {
+                type: '',
+                variable: '',
+                keywords: [ '' ]
+            }
+
+            if(parent.controlType == 'While') {
+                parent.condition = condition
+                return
+            }
+
+            if (parent.conditions.length < 1) {
+                condition.type = 'If'
+            } else if (parent.conditions.length == 1) {
+                condition.type = 'Else'
+            } else {
+                condition.type = 'Else If'
+            }
+
+            if (child) {
+                condition.keywords = [ child.name ]
+            } else {
+                condition.keywords = []
+            }
+
+            parent.conditions.push(condition)
+        }
+
         overlappedLine(line: any, shape: any) {
+            if(!line.type.includes('model')) { return }
+
             const points = line.points
             const xDistance = points[1].x - points[0].x
             const midpoint = points[0].x + xDistance / 2

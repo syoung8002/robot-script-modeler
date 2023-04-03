@@ -15,23 +15,12 @@
                             Math.abs(height / 2),
                             Math.abs(width / 2)
                         );
+                        const yDis = yDir > 0 ? config.points[1].y - 100 : config.points[0].y - 100
 
                         context.beginPath();
                         context.moveTo(config.points[0].x, config.points[0].y);
-                        context.lineTo(config.points[0].x + width / 2 - RADIUS * xDir, config.points[0].y);
-                        context.quadraticCurveTo(
-                            config.points[0].x + width / 2,
-                            config.points[0].y,
-                            config.points[0].x + width / 2,
-                            config.points[0].y + yDir * radius
-                        );
-                        context.lineTo(config.points[0].x + width / 2, config.points[1].y - yDir * radius);
-                        context.quadraticCurveTo(
-                            config.points[0].x + width / 2,
-                            config.points[1].y,
-                            config.points[0].x + width / 2 + radius * xDir,
-                            config.points[1].y
-                        );
+                        context.lineTo(config.points[0].x, yDis);
+                        context.lineTo(config.points[1].x, yDis);
                         context.lineTo(config.points[1].x, config.points[1].y);
                         context.fillStrokeShape(shape);
                     },
@@ -46,17 +35,15 @@
                     sceneFunc: (context, shape) => {
                         const width = config.points[1].x - config.points[0].x;
                         const height = config.points[1].y - config.points[0].y;
-                        const yDir = Math.sign(height);
-                        const xDir = Math.sign(width);
 
                         context.beginPath();
                         context.moveTo(config.points[1].x, config.points[1].y);
-                        context.lineTo(config.points[1].x - (10 * xDir), config.points[1].y - 4);
+                        context.lineTo(config.points[1].x - 4, config.points[1].y - 10);
                         context.quadraticCurveTo(
-                            config.points[1].x - (10 * xDir), 
-                            config.points[1].y + 4, 
-                            config.points[1].x - (10 * xDir), 
-                            config.points[1].y + 4
+                            config.points[1].x - 4, 
+                            config.points[1].y - 10, 
+                            config.points[1].x + 4, 
+                            config.points[1].y - 10
                         );
                         context.closePath();
 
@@ -73,7 +60,7 @@
     import { Component, Vue, Prop } from "vue-property-decorator"
 
     @Component
-    export default class ModelRelation extends Vue {
+    export default class ForTaskRelation extends Vue {
         @Prop() config!: { type: object }
     }
 </script>

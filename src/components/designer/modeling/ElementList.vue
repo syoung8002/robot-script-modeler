@@ -5,7 +5,7 @@
                 <div v-if="item.component.includes('Event')"
                         class="tool-item"
                         draggable="true"
-                        @dragend="addKeyword($event, item)"
+                        @dragend="addEvent($event, item)"
                 >
                     <v-icon>{{ item.icon }}</v-icon>
                 </div>
@@ -23,7 +23,7 @@
                 max-width="500"
                 overflow
         >
-            <div v-if="elementType.includes('Gateway')">
+            <div v-if="elementType.includes('Control')">
                 <v-list>
                     <v-list-item-group>
                         <v-list-item
@@ -32,7 +32,7 @@
                         >
                             <v-list-item-title
                                     draggable="true"
-                                    @dragend="addKeyword($event, item)"
+                                    @dragend="addControl($event, item)"
                             >
                                 {{ item }}
                             </v-list-item-title>
@@ -41,29 +41,20 @@
                 </v-list>
             </div>
             <div v-if="elementType.includes('Task')">
-                <v-tabs v-model="keywordTab">
-                    <v-tab v-for="item in keywordList"
-                            :key="item.keywordType"
-                            center-active
-                    >
-                        {{ item.keywordType }}
-                    </v-tab>
-                </v-tabs>
-                <v-list max-height="450" style="overflow-y: scroll;">
-                    <v-list-item-group>
-                        <v-list-item
-                                v-for="(item, index) in keywords"
-                                :key="index"
+                <v-treeview 
+                        :items="keywordList"
+                        item-key="name"
+                        item-children="list"
+                        open-on-click
+                >
+                    <template v-slot:label="{ item }">
+                        <div draggable="true"
+                                @dragend="addKeyword($event, item)"
                         >
-                            <v-list-item-title
-                                    draggable="true"
-                                    @dragend="addKeyword($event, item)"
-                            >
-                                {{ item }}
-                            </v-list-item-title>
-                        </v-list-item>
-                    </v-list-item-group>
-                </v-list>
+                            {{ item.name }}
+                        </div>
+                    </template>
+                </v-treeview>
             </div>            
         </v-card>
     </div>
@@ -75,12 +66,26 @@
     @Component
     export default class ElementList extends Vue {
         @Prop() elementTypes!: any[]
+
         mounted() {
-            var aa = {
-                keywordType: 'Browser',
-                list: Vue.prototype.$browserList
+            var browser = {
+                name: 'Browser',
+                list: [{}]
             }
-            this.keywordList.push(aa)
+            var browserList = Vue.prototype.$browserList
+            browserList.forEach((keyword: string, index: number) => {
+                if(index == 0) { browser.list = [] }
+                browser.list.push({ id: index, name: keyword })
+            })
+            this.keywordList.push(browser)
+
+            const control = Vue.prototype.$controlList
+            control.forEach((ctrl: string) => {
+                if(!ctrl.includes('Relation')) {
+                    ctrl = ctrl.replaceAll(' Task', '')
+                    this.controlList.push(ctrl)
+                }
+            })
         }
         // data
         public elementType: string = ''
@@ -88,176 +93,8 @@
         public y: number = 0
         public keywordDialog: boolean = false
         public keywordTab: any = null
-        public controlList: any[] = [
-            'FOR',
-            'While',
-            'IF',
-            'Try-Except',
-            'Return',
-            'Break',
-            'Continue',
-        ]
-        public keywordList: any[] = [
-            {
-                keywordType: 'Built-in',
-                list: [
-                    'Call Method',
-                    'Catenate',
-                    'Comment',
-                    'Convert To Binary',
-                    'Convert To Boolean',
-                    'Convert To Bytes',
-                    'Convert To Hex',
-                    'Convert To Integer',
-                    'Convert To Number',
-                    'Convert To Octal',
-                    'Convert To String',
-                    'Create Dictionary',
-                    'Create List',
-                    'Evaluate',
-                    'Fail',
-                    'Get Count',
-                    'Get Length',
-                    'Get Library Instance',
-                    'Get Time',
-                    'Get Variable Value',
-                    'Get Variables',
-                    'Import Library',
-                    'Import Resource',
-                    'Import Variables',
-                    'Log',
-                    'Log Variables',
-                    'No Operation',
-                    'Pass Execution',
-                    'Replace Variables',
-                    'Set Global Variable',
-                    'Set Log Level',
-                    'Set Task Variable',
-                    'Set Variable',
-                    'Set Variable If',
-                    'Sleep',
-                    'Wait Until Keyword Succeeds',
-                ]
-            },
-            {
-                keywordType: 'Collections',
-                list: []
-            },
-            {
-                keywordType: 'String',
-                list: []
-            },
-            {
-                keywordType: 'DateTime',
-                list: [
-                    'Add Time To Date',
-                    'Add Time To Time',
-                    'Convert Date',
-                    'Convert Time',
-                    'Get Current Date',
-                    'Subtract Date From Date',
-                    'Subtract Time From Date',
-                    'Subtract Time From Time',
-                ]
-            },
-            {
-                keywordType: 'JSON',
-                list: [
-                    'Add to JSON',
-                    'Convert JSON to String',
-                    'Convert String to JSON',
-                    'Delete from JSON',
-                    'Get value from JSON',
-                    'Get values from JSON',
-                    'Load JSON from file',
-                    'Save JSON to file',
-                    'Update value to JSON',
-                ]
-            },
-            {
-                keywordType: 'File System',
-                list: []
-            },
-            // {
-            //     keywordType: 'Browser',
-            //     list: [
-            //         'Open Available Browser'
-            //     ]
-            // },
-            {
-                keywordType: 'HTTP',
-                list: [
-                    'Download'
-                ]
-            },
-            {
-                keywordType: 'Excel (Files)',
-                list: []
-            },
-            {
-                keywordType: 'Tables',
-                list: []
-            },
-            {
-                keywordType: 'Windows',
-                list: []
-            },
-            {
-                keywordType: 'Work Items (Control Room)',
-                list: []
-            },
-            {
-                keywordType: 'Vault (Control Room)',
-                list: [
-                    'Get Secret'
-                ]
-            },
-            {
-                keywordType: 'Archive',
-                list: [
-                    'Add To Archive',
-                    'Archive Folder With Tar',
-                    'Archive Folder With Zip',
-                    'Extract Archive',
-                    'Extract File From Archive',
-                    'Get Archive Info',
-                    'List Archive',
-                ]
-            },
-            {
-                keywordType: 'Email (Exchange)',
-                list: [
-                    'Authorize',
-                    'Generate Oauth Url',
-                    'Get Oauth Token',
-                    'Send Message',
-                ]
-            },
-            {
-                keywordType: 'Email (IMAP/SMTP)',
-                list: [
-                    'Authorize',
-                    'Generate Oauth String',
-                    'Generate Oauth Url',
-                    'Get Oauth Token',
-                    'Refresh Oauth Token',
-                    'Save Attachment',
-                    'Send Message',
-                ]
-            },
-            {
-                keywordType: 'PDF',
-                list: []
-            },
-        ]
-
-        get keywords() {
-            if (this.keywordTab != null) {
-                return this.keywordList[this.keywordTab].list
-            } else {
-                return []
-            }
-        }
+        public controlList: any[] = []
+        public keywordList: any[] = []
 
         openKeywordDialog(event: any, type: string) {
             event.preventDefault()
@@ -266,14 +103,24 @@
             this.x = event.clientX
             this.y = event.clientY
         }
+        closeKeywordDialog() {
+            this.keywordDialog = false
+        }
+
+        addEvent(event: any, value: any) {
+            this.$emit('addElement', event, value, value.name)
+            this.keywordDialog = false
+        }
+
+        addControl(event: any, value: any) {
+            const componentInfo = this.elementTypes.find((item) => item.name.includes('Control'))
+            this.$emit('addElement', event, componentInfo, value)
+            this.keywordDialog = false
+        }
 
         addKeyword(event: any, value: any) {
-            if (typeof value == 'string') {
-                const elementInfo = this.elementTypes.find((item) => item.name.includes(this.elementType))
-                this.$emit('addKeyword', event, elementInfo, value)
-            } else {
-                this.$emit('addKeyword', event, value, value.name)
-            }
+            const componentInfo = this.elementTypes.find((item) => item.name.includes('Task'))
+            this.$emit('addElement', event, componentInfo, value.name)
             this.keywordDialog = false
         }
     }

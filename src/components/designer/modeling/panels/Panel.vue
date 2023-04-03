@@ -18,11 +18,11 @@
         </template>
 
         <v-divider></v-divider>
-        <div v-if="elementType=='Gateway'">
-            <gateway-panel
+        <div v-if="elementType=='Control'">
+            <control-panel
                     :type="config.name"
-                    :value="config.properties"
-            ></gateway-panel>
+                    :value="config"
+            ></control-panel>
         </div>
         <div v-if="elementType=='Task'">
             <v-card flat>
@@ -32,7 +32,7 @@
                     ></v-text-field>
                     <task-panel
                         :task-type="config.taskType"
-                        :value="config.properties"
+                        :value="config"
                     ></task-panel>
                 </v-card-text>
             </v-card>
@@ -59,8 +59,8 @@
             if(this.value.type.includes('Event')) {
                 return 'Event'
             }
-            if(this.value.type.includes('Gateway')) {
-                return 'Gateway'
+            if(this.value.type.includes('Control')) {
+                return 'Control'
             }
         }
         get elementIcon() {
@@ -70,7 +70,7 @@
             if(this.value.type.includes('Event')) {
                 return 'mdi-circle'
             }
-            if(this.value.type.includes('Gateway')) {
+            if(this.value.type.includes('Control')) {
                 return 'mdi-rhombus'
             }
         }

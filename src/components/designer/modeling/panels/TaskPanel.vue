@@ -1,9 +1,6 @@
 <template>
     <div>
         <v-card flat>
-            <v-card-text v-if="taskType=='Call Method'">
-                <p>Input Arguments</p>
-            </v-card-text>
             <component 
                 v-if="taskType"
                 :is="taskType+'-panel'"

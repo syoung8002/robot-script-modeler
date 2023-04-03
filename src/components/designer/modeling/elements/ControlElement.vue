@@ -1,19 +1,19 @@
 <template>
     <div>
         <v-regular-polygon
-            :config="config"
-            @dragstart="handleDragStart"
-            @transformend="handleTransformEnd"
-            @dblclick="handleModelPanel"
-            @contextMenu="handleContextMenu"
+                :config="config"
+                @dragstart="handleDragStart"
+                @transformend="handleTransformEnd"
+                @dblclick="handleModelPanel"
+                @contextMenu="handleContextMenu"
         ></v-regular-polygon>
-        <v-text
+        <!-- <v-text
                 :config="{
                     x: config.x - config.radius,
                     y: config.y + config.radius + 10,
                     text: config.name,
                 }"
-        ></v-text>
+        ></v-text> -->
     </div>
 </template>
 
@@ -27,5 +27,5 @@
         }
     })
 
-    export default class GatewayElement extends Mixins(ModelElement) {}
+    export default class ControlElement extends Mixins(ModelElement) {}
 </script>

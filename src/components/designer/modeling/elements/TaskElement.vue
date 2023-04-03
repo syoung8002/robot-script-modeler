@@ -30,9 +30,9 @@
     export default class TaskElement extends Mixins(ModelElement) {
 
         mounted() {
-            console.log("**********")
-            console.log(this.value)
-            console.log("**********")
+            // console.log("**********")
+            // console.log(this.value)
+            // console.log("**********")
         }
 
     }

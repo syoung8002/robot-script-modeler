@@ -5,11 +5,13 @@ import router from './router'
 
 // vuetify
 import vuetify from '@/plugins/vuetify'
+import Control from '@/components/designer/modeling/control'
 import Browser from '@/components/designer/modeling/keyword/Browser'
 import Panels from '@/components/designer/modeling/panels'
 import VueKonva from 'vue-konva'
 
 Vue.use(VueKonva)
+Vue.use(Control)
 Vue.use(Browser)
 Vue.use(Panels)
 Vue.config.productionTip = false
