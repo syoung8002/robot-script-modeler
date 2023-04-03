@@ -24,16 +24,16 @@
                     :value="config"
             ></control-panel>
         </div>
-        <div v-if="elementType=='Task'">
+        <div v-if="elementType=='Keyword'">
             <v-card flat>
                 <v-card-text>
                     <v-text-field
                             v-model="config.name"
                     ></v-text-field>
-                    <task-panel
-                        :task-type="config.taskType"
+                    <keyword-panel
+                        :keyword-type="config.keywordType"
                         :value="config"
-                    ></task-panel>
+                    ></keyword-panel>
                 </v-card-text>
             </v-card>
         </div>
@@ -44,17 +44,18 @@
     
     @Component
     export default class Panel extends Vue {
-        @Prop() public taskType!: String
+        @Prop() public keywordType!: String
         @Prop() public value!: any
 
         // computed
         get config() {
+            console.log(this.value)
             return this.value
         }
         
         get elementType() {
-            if(this.value.type.includes('Task')) {
-                return 'Task'
+            if(this.value.type.includes('Keyword')) {
+                return 'Keyword'
             }
             if(this.value.type.includes('Event')) {
                 return 'Event'
@@ -64,7 +65,7 @@
             }
         }
         get elementIcon() {
-            if(this.value.type.includes('Task')) {
+            if(this.value.type.includes('Keyword')) {
                 return 'mdi-square'
             }
             if(this.value.type.includes('Event')) {

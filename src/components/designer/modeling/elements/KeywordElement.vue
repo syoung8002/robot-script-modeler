@@ -27,12 +27,9 @@
             ModelElement,
         }
     })
-    export default class TaskElement extends Mixins(ModelElement) {
+    export default class KeywordElement extends Mixins(ModelElement) {
 
         mounted() {
-            // console.log("**********")
-            // console.log(this.value)
-            // console.log("**********")
         }
 
     }

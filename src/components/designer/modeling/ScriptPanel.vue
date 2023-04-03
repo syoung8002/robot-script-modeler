@@ -25,7 +25,9 @@
         @Prop() public robot!: any;
 
         public scriptText: string = ''
-
+        get scriptTextLines() {
+            return this.scriptText.split("\n");
+        }
         mounted () {
             this.scriptText = this.robot.toRobot(0)
             console.log(this.scriptText)

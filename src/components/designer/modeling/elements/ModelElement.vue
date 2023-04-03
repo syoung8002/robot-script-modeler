@@ -51,9 +51,6 @@
         handleTransformEnd(e: any) {
             const newWidth = Math.floor(this.value.width * e.target.scaleX())
             const newHeight = Math.floor(this.value.height * e.target.scaleY())
-            console.log(newWidth, newHeight)
-            console.log(e.target.width(), e.target.height())
-
             this.movingRelation(this.value)
         }
         movingRelation(val: any) {
@@ -63,7 +60,7 @@
             if (e.target instanceof Konva.Text) {
                 this.value.x = Math.floor(e.target.x())
                 
-                if(this.config.type.includes('task')) {
+                if(this.config.type.includes('keyword')) {
                     this.value.y = Math.floor(e.target.y() - this.config.height/2 + 10)
                 } else {
                     this.value.y = Math.floor(e.target.y())

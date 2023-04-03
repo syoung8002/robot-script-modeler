@@ -7,7 +7,7 @@
             KeywordElement,
         }
     })
-    export default class ChooseFile extends Mixins(KeywordElement) {
+    export default class CallMethod extends Mixins(KeywordElement) {
         mounted() {
         }
     }

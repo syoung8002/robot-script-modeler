@@ -40,22 +40,26 @@
                     </v-list-item-group>
                 </v-list>
             </div>
-            <div v-if="elementType.includes('Task')">
+            <div v-if="elementType.includes('Keyword')">
                 <v-treeview 
                         :items="keywordList"
-                        item-key="name"
+                        item-key="keywordType"
                         item-children="list"
                         open-on-click
                 >
                     <template v-slot:label="{ item }">
-                        <div draggable="true"
+                        <div v-if="typeof item == 'string'"
+                                draggable="true"
                                 @dragend="addKeyword($event, item)"
                         >
-                            {{ item.name }}
+                            {{ item }}
+                        </div>
+                        <div v-else>
+                            {{ item.keywordType }}
                         </div>
                     </template>
                 </v-treeview>
-            </div>            
+            </div>
         </v-card>
     </div>
 </template>
@@ -68,16 +72,26 @@
         @Prop() elementTypes!: any[]
 
         mounted() {
-            var browser = {
-                name: 'Browser',
-                list: [{}]
+            const builtInList = {
+                keywordType: 'Built-In',
+                list: Vue.prototype.$builtInList
             }
-            var browserList = Vue.prototype.$browserList
-            browserList.forEach((keyword: string, index: number) => {
-                if(index == 0) { browser.list = [] }
-                browser.list.push({ id: index, name: keyword })
-            })
-            this.keywordList.push(browser)
+            this.keywordList.push(builtInList)
+            const collectionList = {
+                keywordType: 'Collections',
+                list: Vue.prototype.$collectionList
+            }
+            this.keywordList.push(collectionList)
+            const fileSystemList = {
+                keywordType: 'File System',
+                list: Vue.prototype.$fileSystemList
+            }
+            this.keywordList.push(fileSystemList)
+            const browserList = {
+                keywordType: 'Browser',
+                list: Vue.prototype.$browserList
+            }
+            this.keywordList.push(browserList)
 
             const control = Vue.prototype.$controlList
             control.forEach((ctrl: string) => {
@@ -95,6 +109,14 @@
         public keywordTab: any = null
         public controlList: any[] = []
         public keywordList: any[] = []
+
+        get keywords() {
+            if (this.keywordTab != null) {
+                return this.keywordList[this.keywordTab].list
+            } else {
+                return []
+            }
+        }
 
         openKeywordDialog(event: any, type: string) {
             event.preventDefault()

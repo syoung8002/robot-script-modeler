@@ -1,13 +1,13 @@
 <script lang="ts">
     import { Component, Mixins } from "vue-property-decorator"
-    import TaskElement from '@/components/designer/modeling/elements/TaskElement.vue'
+    import KeywordElement from '@/components/designer/modeling/elements/KeywordElement.vue'
 
     @Component({
         components: {
-            TaskElement,
+            KeywordElement,
         }
     })
-    export default class CapturePageScreenshot extends Mixins(TaskElement) {
+    export default class CapturePageScreenshot extends Mixins(KeywordElement) {
         mounted() {
         }
     }
