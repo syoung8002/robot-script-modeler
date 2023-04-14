@@ -68,9 +68,9 @@ export default class RobotDesigner extends Vue {
           {name: "Keyword", type: Keyword},
         ];
 
-    robot: Task = new Robot(4, "Task1", [
-          new ForTask(5, "for", 
-            [ new Task(6, "task") ]
+    robot: Task = new Robot(4, "Task1", "Task", [
+          new ForTask(5, "for", "ForTask", 
+            [ new Task(6, "task", "Task") ]
           )
         ])
     ;

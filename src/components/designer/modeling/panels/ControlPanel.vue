@@ -9,7 +9,7 @@
 
 <script lang="ts">
     import { Component, Prop, Mixins } from "vue-property-decorator"
-    import Panel from "@/components/designer/modeling/panels/Panel.vue";
+    import Panel from "@/components/designer/modeling/panels/CommonPanel.vue";
 
     @Component({
         components: {
@@ -21,11 +21,10 @@
         @Prop() value: any
 
         get panelName() {
-            return this.value.controlType+'TaskPanel'
+            return this.value.type+'Panel'
         }
 
         mounted() {
-            // console.log(this.panelName)
         }
     }
 </script>

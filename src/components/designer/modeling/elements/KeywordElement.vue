@@ -3,7 +3,6 @@
         <v-rect
                 :config="config"
                 @dragstart="handleDragStart"
-                @transformend="handleTransformEnd"
                 @dblclick="handleModelPanel"
                 @contextMenu="handleContextMenu"
         ></v-rect>
@@ -30,6 +29,24 @@
     export default class KeywordElement extends Mixins(ModelElement) {
 
         mounted() {
+        }
+
+        createdNewKeyword(name: string, id: string, x: number, y: number, type: string) {
+            var elementView: any = {
+                name: name,
+                id: id,
+                fill: '#fafafa',
+                stroke: '#000000',
+                draggable: true,
+                x: x,
+                y: y,
+                width: 100,
+                height: 80,
+                cornerRadius: 5,
+                type: type,
+                keywordType: name,
+            }
+            return elementView
         }
 
     }

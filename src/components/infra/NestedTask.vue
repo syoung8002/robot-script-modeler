@@ -5,7 +5,8 @@
   
         <i class="fa fa-align-justify handle"></i>
   
-        <input type="text" class="form-control" v-model="el.name"/>
+        <!-- <input type="text" class="form-control" v-model="el.name"/> -->
+        <span>{{ el.name }}</span>
   
         <i class="fa fa-times close" @click="removeAt(idx)"></i>
   

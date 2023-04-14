@@ -12,10 +12,10 @@
             <v-spacer></v-spacer>
             <v-text-field
                     v-model="taskName"
-                    label="Tasks Name"
+                    label="Task Name"
                     style="max-width: 300px; margin-top: 15px;"
             ></v-text-field>
-            <v-btn text color="orange">
+            <v-btn text color="orange" @click="openVariableDialog">
                 <v-icon>mdi-variable-box</v-icon>
                 Variables
             </v-btn>
@@ -61,21 +61,16 @@
                             :is="relation.type"
                             :config="relation"
                     ></component>
-                    <!-- <model-relation
-                            :config="relation"
-                    ></model-relation> -->
                 </div>
-
-                <v-transformer ref="transformer" />
             </v-layer>
         </v-stage>
 
-        <element-list
+        <!-- <element-list
                 :elementTypes="elementTypes"
-                @selectedKeyword="detectedCollision"
+                @detectedCollision="detectedCollision"
                 @addElement="addElement"
                 ref="elementList"
-        ></element-list>
+        ></element-list> -->
 
         <!-- Robot Script Panel-->
         <ScriptPanel
@@ -101,8 +96,16 @@
         <!-- Element Property Panel-->
         <model-panel
                 v-if="isOpenPanel"
-                :value="selectedShape"
+                v-model="selectedTask"
         ></model-panel>
+
+        <!-- Variables Dialogs -->
+        <!-- <v-dialog v-model="variableDialog" max-width="800">
+            <variables-dialog
+                    :variables="robot.variables"
+                    @updateVariables="updateVariables"
+            ></variables-dialog>
+        </v-dialog> -->
     </div>
 </template>
 
@@ -114,11 +117,12 @@
     import KeywordElement from '@/components/designer/modeling/elements/KeywordElement.vue'
     import ModelRelation from "@/components/designer/modeling/ModelRelation.vue";
     import ScriptPanel from "@/components/designer/modeling/ScriptPanel.vue";
-    import ModelPanel from "@/components/designer/modeling/panels/Panel.vue";
+    import ModelPanel from "@/components/designer/modeling/panels/CommonPanel.vue";
     import ElementList from "@/components/designer/modeling/ElementList.vue";
+    import VariablesDialog from "@/components/designer/modeling/VariablesDialog.vue";
+
     import { Stage } from 'konva/lib/Stage';
     import { Layer } from "konva/lib/Layer";
-    import { Node } from 'konva/lib/Node';
     import { Robot, SeqTask, Task, IfTask, ForTask, WhileTask, Keyword, CallKeyword } from "@/types/Task";
 
     interface KonvaLayer extends Vue {
@@ -127,10 +131,6 @@
 
     interface KonvaStage extends Vue {
         getStage (): Stage
-    }
-
-    interface KonvaTransformer extends Vue {
-        getNode (): Transformer,
     }
 
     const WIDTH = window.innerWidth;
@@ -146,12 +146,13 @@
             ScriptPanel,
             ModelPanel,
             ElementList,
+            VariablesDialog,
         }
     })
 
     export default class ModelCanvas extends Vue {
-        taskName: string = '';
-        robot: Task = new Robot(1, this.taskName, [])
+        taskName: string = 'New Task';
+        robot: Task = new Robot(this.uuid(), this.taskName, [])
         
         configKonva: any = {
             width: WIDTH,
@@ -160,31 +161,27 @@
         };
         $refs!: {
             stage: KonvaStage
-            transformer: KonvaTransformer
             layer: KonvaLayer
             elementList: ElementList
         }
         elementTypes: any[] = [
             {
                 name: 'Event',
-                radius: 20,
                 component: 'EventElement',
                 icon: 'mdi-circle-outline',
             },
             {
                 name: 'Control',
-                sides: 4,
-                radius: 30,
                 component: 'ControlElement',
                 icon: 'mdi-rhombus-outline',
+                task: null,
             },
             {
                 name: 'Keyword',
-                width: 100,
-                height: 80,
                 component: 'KeywordElement',
                 icon: 'mdi-square-outline',
-            },                    
+                task: Keyword,
+            },
         ];
         
         // modeling
@@ -194,8 +191,8 @@
         dividedLines: any = [];
         divisiveElement: any = null;
         // shape
+        selectedTask: any = null;;
         selectedShapeId: string = '';
-        selectedShape: any = null;
         lappedElement: any = null;
         // panel
         isOpenPanel: boolean = false;
@@ -204,6 +201,8 @@
         menuStyle: any = {};
         // robot script
         isOpenScript: boolean = false;
+        //
+        variableDialog: boolean = false;
 
         mounted () {
             const layer = this.$refs.layer.getNode();
@@ -212,24 +211,9 @@
                 this.detectedCollision(event, null)
             })
             layer.on('dragend', (event: any) => {
-                let target = event.target
-                if (target instanceof Konva.Transformer) {
-                    const node = target['_nodes'];
-                    target = node[0];
-                }
-                
                 this.detectedCollision(event, null)
-                const element = this.elements.find((el: any) => el.id === target.id())
-                if(this.lappedElement != null) {
-                    if (this.lappedElement.type.includes('Control')) {
-                        if (this.lappedElement.id != element.id) {
-                            this.robot.child = this.robot.delChild([element.id], this.robot.child)
-                            this.addControlConnection(element)
-                        }
-                    }
-                }
+
                 if (this.dividedLines.length > 0) {
-                    this.divisiveElement = element
                     this.divideConnection()
                 }
             })
@@ -243,17 +227,46 @@
             this.robot.setName(val)
         }
 
-        @Watch("elements", {immediate: true, deep: true})
-        updateRobot(val: any) {
-            val.forEach((el: any) => {
-                const childTask = this.robot.findChildTask(el.id, this.robot.child)
-                if(childTask) {
-                    childTask.setProperty(el)
-                    if (childTask.child.length > 0) {
-                        childTask.child = this.robot.alignChild(childTask.child)
-                    }
+        @Watch("robot.child", {immediate: true, deep: true})
+        updateRobot(newVal: any[], oldVal: any[]) {
+            if (newVal) {
+                // console.log(newVal)
+            }
+        }
+        
+
+        @Watch("lappedElement", {immediate: true, deep: true})
+        checkLapped(newVal: any, oldVal: any) {
+            if (newVal && this.divisiveElement) {
+                const parentTask = this.robot.findChildTask(newVal.id, this.robot.child)
+                const childTask = this.robot.findChildTask(this.divisiveElement.id, this.robot.child)
+                const hasChild = parentTask.child.some((task: any) => task.id == childTask.id)
+                if (hasChild) {
+                    return
+                } else {
+                    this.robot.child = this.robot.delChild(childTask.id, this.robot.child)
+                    parentTask.child.push(childTask)
                 }
-            })
+            } else {
+                // if(oldVal && this.divisiveElement) {
+                //     const parentTask = this.robot.findChildTask(oldVal.id, this.robot.child)
+                //     const childTask = this.robot.findChildTask(this.divisiveElement.id, this.robot.child)
+                //     const hasChild = parentTask.child.some((task: any) => task.id == childTask.id)
+                //     if (hasChild) {
+                //         parentTask.child = parentTask.child.filter((child: any) => child.id != childTask.id)
+                //         this.robot.child.push(childTask)
+                //     }
+                // }
+            }
+        }
+
+        @Watch("selectedShapeId", {immediate: true, deep: true})
+        selTask(val: string) {
+            if(val) {
+                this.selectedTask = this.robot.findChildTask(val, this.robot.child)
+            } else {
+                this.selectedTask = null
+            }
         }
 
         kebabCase(str: string) {
@@ -276,11 +289,8 @@
         handleModelPanel(val: any) {
             this.isOpenPanel = false
             if (val) {
-                this.selectedShape = this.elements.find((r: any) => r.id === val.id);
                 this.selectedShapeId = val.id
                 this.isOpenPanel = true
-            } {
-                this.selectedShapeId = ''
             }
         }
         handleContextMenu(val: any) {
@@ -290,12 +300,10 @@
                 const pos = val.event.target.getStage().getPointerPosition();
                 this.menuStyle.left = pos.x + 'px'
                 this.menuStyle.top = pos.y + 'px'
-                this.selectedShape = this.elements.find((r: any) => r.id === val.config.id)
                 this.selectedShapeId = val.config.id
                 this.isOpenMenu = true
             } else {
                 this.menuStyle = {}
-                this.selectedShapeId = ''
             }
         }
         updateConfig(val: any) {
@@ -303,276 +311,207 @@
                 if(element.id == val.id) {
                     element.x = val.x
                     element.y = val.y
-                    element.rotation = val.rotation
-                    element.scaleX = val.scaleX
-                    element.scaleY = val.scaleY
                 }
             })
         }
-        addElement(event: any, componentInfo: any, name: string) {
-            let element: any = {
-                name: name,
-                id: this.uuid(),
-                scaleX: 1,
-                scaleY: 1,
-                rotation: 0,
-                fill: '#fafafa',
-                stroke: '#000000',
-                draggable: true,
-                x: event ? event.pageX: 200,
-                y: event ? event.pageY: 300,
-                type: componentInfo.component,
-                incomingRef: '',
-                outgoingRef: '',
-                keywordType: this.kebabCase(name)
-            }
-
-            if(componentInfo.component.includes('Event')) {
-                element.name = 'Start'
-                element.radius = componentInfo.radius
-            } else if(componentInfo.component.includes('Control')) {
-                element.sides = componentInfo.sides
-                element.radius = componentInfo.radius
-                element.controlType = name
-
-                if (name.includes('For')) {
-                    element.itemVarName = 'item'
-                    element.iterationVarName = 'items'
-                    this.robot.child.push(new ForTask(element.id, name, []))
-                } else if (name.includes('If')) {
-                    element.conditions = []
-                    this.addControlCondition(element, null)
-                    this.robot.child.push(new IfTask(element.id, name, []))
-                } else if (name.includes('While')) {
-                    element.limit = ''
-                    element.condition = {}
-                    this.addControlCondition(element, null)
-                    this.robot.child.push(new WhileTask(element.id, name, []))
-                }
-
-            } else {
-                element.width = componentInfo.width
-                element.height = componentInfo.height
-                element.cornerRadius = 10
-                element.taskType = this.kebabCase(name)
-
-                this.robot.child.push(new Task(element.id, name, []))
-            }
+        addElement(event: any, componentInfo: any, type: string) {
+            var vueComponent, elementView, copyElementView, task
             
-            this.elements.push(element)
-
-            if(componentInfo.component.includes('Control') || 
-                componentInfo.component.includes('Keyword')
-            ) {
-                this.detectedCollision(event, componentInfo)
+            if(componentInfo.component.includes('Event')) {
+                vueComponent = new EventElement()
                 
-                if (this.dividedLines.length > 0) {
-                    this.divisiveElement = element
-                    this.divideConnection()
-                }
+                elementView = vueComponent.createdNewEvent(
+                    'Start', 
+                    this.uuid(), 
+                    event ? event.pageX : 200, 
+                    event ? event.pageY : 300, 
+                    componentInfo.component
+                )
+                copyElementView = vueComponent.createdNewEvent(
+                    'End', 
+                    this.uuid(), 
+                    event ? event.pageX : 1200, 
+                    event ? event.pageY : 300, 
+                    componentInfo.component
+                )
 
-                if (componentInfo.component.includes('Control')) {
-                    let element2 = null
-                    
-                    element2 = JSON.parse(JSON.stringify(element))
-                    element2.x += 500
-                    element2.id = this.uuid()
-                    element2.gatewayRef = element.id
-                    element2.endControl = true
-                    element.gatewayRef = element2.id
-                    
-                    this.elements.push(element2)
-                    this.addConnection(element.id, element2.id)
+            } else if(componentInfo.component.includes('Control')) {
+                vueComponent = new ControlElement()
+                elementView = vueComponent.createdNewControl(
+                    type, 
+                    this.uuid(), 
+                    event.pageX, 
+                    event.pageY, 
+                    componentInfo.component
+                )
+                copyElementView = vueComponent.createdNewControl(
+                    type,
+                    this.uuid(), 
+                    event.pageX + 300, 
+                    event.pageY, 
+                    componentInfo.component
+                )
+                copyElementView.endControl = true
+                copyElementView.controlId = elementView.id
 
+                task = new (componentInfo.task)(elementView.id, type)
+                task.setElementView(elementView)
+
+                this.robot.child.push(task)
+
+            } else if(componentInfo.component.includes('Keyword')) {
+                vueComponent = new KeywordElement()
+                elementView = vueComponent.createdNewKeyword(
+                    type, 
+                    this.uuid(), 
+                    event.pageX, 
+                    event.pageY, 
+                    componentInfo.component
+                )
+
+                task = new (componentInfo.task)(elementView.id, type)
+                task.setElementView(elementView)
+            
+                this.robot.child.push(task)
+            
+            }
+
+            this.elements.push(elementView)
+            if (this.lappedElement || this.dividedLines) {
+                this.divisiveElement = elementView
+                this.divideConnection()
+            }
+
+            if (copyElementView) {
+                this.elements.push(copyElementView)
+                this.addConnection(elementView.id, copyElementView.id)
+
+                if (this.lappedElement || this.dividedLines) {
+                    this.divisiveElement = copyElementView
                     const obj = {
-                        x: element2.x,
-                        y: element2.y,
+                        x: copyElementView.x,
+                        y: copyElementView.y,
                     }
                     this.detectedCollision(obj, componentInfo)
-
-                    this.divisiveElement = element2
                     this.divideConnection()
                 }
-            } else {
-                let element2 = null
-                element2 = JSON.parse(JSON.stringify(element))
-                element2.x += 1000
-                element2.name = 'End'
-                element2.strokeWidth = 5
-                element2.id = this.uuid()
-                element2.eventRef = element.id
-                element2.incomingRef = element.id
-                element.eventRef = element2.id
-                element.outgoingRef = element2.id
-
-                this.elements.push(element2)
-                this.addConnection(element.id, element2.id)
             }
         }
         deleteElement(id: string) {
-            const delEl = this.elements.find((el: any) => el.id === id)
-            
-            let delList: any = []
-            if (delEl.type.includes('Keyword')) {
-                this.elements.forEach((el: any) => {
-                    if (el.id == id) {
-                        delList.push(el.id)
-                    }
+            var delTask = this.robot.findChildTask(id, this.robot.child)
+            var delList = [ id ]
+            if ( delTask ) {
+                delTask.child.forEach((child: any) => {
+                    delList.push(child.id)
                 })
-            } else if (delEl.type.includes('Control')) {
-                this.elements.forEach((el: any) => {
-                    if (el.id == id || el.gatewayRef == id) {
-                        delList.push(el.id)
-                    }
-                    if (el.type.includes('Keyword') && (el.incomingRef == id || el.outgoingRef == id)) {
-                        delList.push(el.id)
-                    }
-                })
-            } else if (delEl.type.includes('Event')) {
-                this.elements.forEach((el: any) => {
-                    if (el.id == id || el.incomingRef == id || el.outgoingRef == id) {
-                        delList.push(el.id)
-                        if(el.type.includes('Control')) {
-                            const keywordList = this.elements.filter((obj: any) => 
-                                obj.type.includes('Keyword') && 
-                                (obj.incomingRef == el.id || obj.outgoingRef == el.id)
-                            )
-                            keywordList.forEach((keyword: any) => {
-                                delList.push(keyword.id)
-                                if (!delList.includes(keyword.incomingRef)) {
-                                    delList.push(keyword.incomingRef)
-                                }
-                                if (!delList.includes(keyword.outgoingRef)) {
-                                    delList.push(keyword.outgoingRef)
-                                }
-                            })
-                        }
-                    }
-                    if (el.eventRef == id) {
-                        delList.push(el.id)
-                        const elList = this.elements.filter((obj: any) => 
-                            obj.incomingRef == el.id || obj.outgoingRef == el.id)
-                        elList.forEach((obj: any) => {
-                            if (!delList.includes(obj.id)) {
-                                delList.push(obj.id)
-                            }
-                        })
-                    }
-                })
+                console.log(id, this.robot.child)
+                // this.robot.child = this.robot.delChild(id, this.robot.child)
             }
-
+            
             let newElements = []
-            newElements = this.elements.filter((el: any) => !delList.includes(el.id))
+            newElements = this.elements.filter((el: any) => !delList.includes(el.id) && !delList.includes(el.controlId))
             this.elements = newElements
 
             delList.forEach((delId: string) => {
                 this.deleteConnection(delId)
             })
-
-            // robot
-            this.robot.child = this.robot.delChild(delList, this.robot.child)
             
             this.handleContextMenu(null)
+            this.reconnectLine()
         }
             
         /** Stage Function */
         handleStageMouseDown(event: any) {
+            this.$refs.elementList.closeKeywordDialog()
+            this.handleModelPanel(null)
+            this.handleContextMenu(null)
+
             if (event.target !== event.target.getStage()) {
-                                let elId = '';
-                if (event.target instanceof Konva.Text) {
-                    elId = event.target.attrs.elementId;
-                } else {
-                    elId = event.target.id();
-                }
+                let elId = '';
+                elId = event.target.id();
                 this.selectedShapeId = elId;
+            } else {
+                this.selectedShapeId = ""
             }
 
             if (this.isOpenScript) {
                 this.isOpenScript = false
             }
-
-            this.$refs.elementList.closeKeywordDialog()
-            this.handleModelPanel(null)
-            this.handleContextMenu(null)
         }
-        detectedCollision(event: any, type: any) {
+        detectedCollision(event: any, componentInfo: any) {
             let shape: any = {}
 
-            if (type && type.component) {
-                if (type.component.includes('Keyword')) {
-                    shape = {
-                        x: event.x,
-                        y: event.y,
-                        minX: event.x - type.width/2,
-                        maxX: event.x + type.width/2,
-                        minY: event.y - type.height/2,
-                        maxY: event.y + type.height/2,
-                        xRadius: type.width/2,
-                        yRadius: type.height/2,
-                    }
-                } else if (type.component.includes('Event') || type.component.includes('Control')) {
-                    shape = {
-                        x: event.x,
-                        y: event.y,
-                        minX: event.x - type.radius,
-                        maxX: event.x + type.radius,
-                        minY: event.y - type.radius,
-                        maxY: event.y + type.radius,
-                        xRadius: type.radius,
-                        yRadius: type.radius,
-                    }
+            if (event.target instanceof Konva.Shape) {
+                // Moving Element
+                const target = event.target
+                const type = target.attrs.type
+                shape = {
+                    id: target.id(),
+                    type: type
                 }
-                shape.type = type.component
-            } else {
-                let target = event.target
-                if (target instanceof Konva.Transformer) {
-                    const node = target['_nodes'];
-                    target = node[0];
-                }
+                const element = this.elements.find((el: any) => el.id == shape.id)
+                this.divisiveElement = element
 
-                if (target instanceof Konva.Rect) {
-                    shape = {
-                        id: target.id(),
-                        type: target.attrs.type,
-                        x: target.getAbsolutePosition().x + target.width() / 2,
-                        y: target.getAbsolutePosition().y + target.height() / 2,
-                        minX: target.getAbsolutePosition().x,
-                        maxX: target.getAbsolutePosition().x + target.width(),
-                        minY: target.getAbsolutePosition().y,
-                        maxY: target.getAbsolutePosition().y + target.height(),
-                        xRadius: target.width() / 2,
-                        yRadius: target.height() / 2,
-                    }
-                } else if (target instanceof Konva.Circle || target instanceof Konva.RegularPolygon) {
-                    shape = {
-                        id: target.id(),
-                        type: target.attrs.type,
-                        x: target.getAbsolutePosition().x,
-                        y: target.getAbsolutePosition().y,
-                        minX: target.getAbsolutePosition().x - target.radius(),
-                        maxX: target.getAbsolutePosition().x + target.radius(),
-                        minY: target.getAbsolutePosition().y - target.radius(),
-                        maxY: target.getAbsolutePosition().y + target.radius(),
-                        xRadius: target.radius(),
-                        yRadius: target.radius(),
-                    }
+                if (type.includes('Control')) {
+                    shape.x = target.getAbsolutePosition().x
+                    shape.y = target.getAbsolutePosition().y
+                    shape.minX = target.getAbsolutePosition().x + target.radius(),
+                    shape.maxX = target.getAbsolutePosition().x + target.radius(),
+                    shape.minY = target.getAbsolutePosition().y + target.radius(),
+                    shape.maxY = target.getAbsolutePosition().y + target.radius(),
+                    shape.xRadius = target.radius()
+                    shape.yRadius = target.radius()
+                } else if (type.includes('Keyword')) {
+                    shape.x = target.getAbsolutePosition().x + target.width() / 2
+                    shape.y = target.getAbsolutePosition().y + target.height() / 2
+                    shape.minX = target.getAbsolutePosition().x
+                    shape.maxX = target.getAbsolutePosition().x + target.width()
+                    shape.minY = target.getAbsolutePosition().y
+                    shape.maxY = target.getAbsolutePosition().y + target.height()
+                    shape.xRadius = target.width() / 2
+                    shape.yRadius = target.height() / 2
+                }
+            } else {
+                // New Element
+                const type = componentInfo.component
+                shape = {
+                    x: event.x,
+                    y: event.y,
+                    id: '',
+                    type: type
+                }
+                if (type.includes('Control')) {
+                    shape.minX = event.x - 30
+                    shape.maxX = event.x + 30
+                    shape.minY = event.y - 30
+                    shape.maxY = event.y + 30
+                    shape.xRadius = 30
+                    shape.yRadius = 30
+                } else if (type.includes('Keyword')) {
+                    shape.minX = event.x - 40
+                    shape.maxX = event.x + 40
+                    shape.minY = event.y - 50
+                    shape.maxY = event.y + 50
+                    shape.xRadius = 40
+                    shape.yRadius = 50
                 }
             }
 
+            let shape2: any = null
             this.elements.forEach((el: any) => {
                 if(!el.type.includes('Event') && shape.type.includes('Keyword')) {
                     el.stroke = '#000000'
-                    if (shape.id && shape.id != el.id) {
-                        let shape2 = {}
-                        if (el.type.includes('Keyword')) {
-                            shape2 = {
-                                id: el.id,
-                                x: el.x + el.width / 2,
-                                y: el.y + el.height / 2,
-                                xRadius: el.width / 2,
-                                yRadius: el.height / 2
-                            }
-                        } else if (el.type.includes('Control')) {
+                    if (shape.id != el.id) {
+                        // if (el.type.includes('Keyword')) {
+                        //     shape2 = {
+                        //         id: el.id,
+                        //         x: el.x + el.width / 2,
+                        //         y: el.y + el.height / 2,
+                        //         xRadius: el.width / 2,
+                        //         yRadius: el.height / 2
+                        //     }
+                        // } else 
+                        if (el.type.includes('Control')) {
                             shape2 = {
                                 id: el.id,
                                 x: el.x,
@@ -581,14 +520,20 @@
                                 yRadius: el.radius
                             }
                         }
-                        
-                        if (this.overlappedShape(shape, shape2)) {
-                            el.stroke = 'red'
-                            this.lappedElement = el
-                        }
                     }
                 }
             })
+
+            if (shape2) {
+                if (this.overlappedShape(shape, shape2)) {
+                    const lappedEl = this.elements.find((el: any) => el.id == shape2.id)
+                    lappedEl.stroke = 'red'
+                    this.lappedElement = lappedEl
+                } else {
+                    this.lappedElement = null
+                }
+            }
+            shape2 = null
 
             const overlapLines = this.relations.filter((line: any) => 
                 this.overlappedLine(line, shape) )
@@ -604,7 +549,7 @@
                     line.stroke = '#000000'
                     line.strokeWidth = 2
                 })
-                this.dividedLines = []
+                // this.dividedLines = []
             }
         }
             
@@ -653,7 +598,7 @@
                 }
             }
 
-            const newConn = {
+            const relationInfo = {
                 name: 'relation',
                 from: fromId,
                 to: toId,
@@ -663,9 +608,8 @@
                 type: 'model-relation'
             }
 
-            const newLines = this.relations.concat(newConn)
+            const newLines = this.relations.concat(relationInfo)
             this.relations = newLines
-
         }
         addForTaskConnection(source: any, target: any) {
             const from = {
@@ -677,7 +621,7 @@
                 y: Math.floor(source.y - source.radius),
             }
 
-            const newConn = {
+            const relationInfo = {
                 name: 'relation',
                 from: target.id,
                 to: source.id,
@@ -687,15 +631,13 @@
                 type: 'for-task-relation'
             }
 
-            const newLines = this.relations.concat(newConn)
+            const newLines = this.relations.concat(relationInfo)
             this.relations = newLines
         }
         deleteConnection(id: string) {
             if (!id) {
                 return
             }
-            
-            const me = this
             const newLines = this.relations.filter((r: any) =>
                 r.from != id && r.to != id
             )
@@ -720,48 +662,6 @@
             this.relations = newLines
 
             this.dividedLines.forEach((line: any) => {
-                const source = this.elements.find((el: any) => el.id === line.from)
-                const target = this.elements.find((el: any) => el.id === line.to)
-                if(source.type.includes('Control') && target.type.includes('Control')) {
-                    if(source.controlType == 'If') {
-                        if(source.conditions.length > 1 || source.conditions.length < 1) {
-                            this.addControlCondition(source, this.divisiveElement)
-                        } else {
-                            let keywords = source.conditions[0].keywords
-                            keywords.push(this.divisiveElement.name)
-                            keywords = keywords.filter((keyword: string) => keyword != '')
-                            source.conditions[0].keywords = keywords
-                        }
-                    }
-                    this.updateTasks(source, this.divisiveElement)
-
-                } else if(target.type.includes('Control')) {
-                    let controlTask = this.elements.find((el: any) => el.id === target.gatewayRef)
-                    if(source.controlType == 'If') {
-                        controlTask.conditions.forEach((condition: any) => {
-                            if(condition.keywords.includes(source.name)) {
-                                condition.keywords.push(this.divisiveElement.name)
-                            }
-                        })
-                    }
-                    this.updateTasks(controlTask, this.divisiveElement)
-
-                } else if(source.type.includes('Control')) {
-                    if(source.controlType == 'If') {
-                        source.conditions.forEach((condition: any) => {
-                            if(condition.keywords.includes(source.name)) {
-                                condition.keywords.push(this.divisiveElement.name)
-                            }
-                        })
-                    }
-                    this.updateTasks(source, this.divisiveElement)
-
-                } else {
-                    if(this.divisiveElement.type.includes('Keyword')) {
-                        this.updateTasks(source, this.divisiveElement)
-                    }
-                }
-
                 this.addConnection(line.from, this.divisiveElement.id)
                 this.addConnection(this.divisiveElement.id, line.to)
             })
@@ -771,19 +671,7 @@
 
             this.reconnectLine()
         }
-
-        updateTasks(parent: any, child: any) {
-            this.robot.child = this.robot.child.filter((task: any) => task.id != child.id)
-            var parentTask = this.robot.child.find((task: any) => task.id == parent.id)
-            if(parentTask) {
-                parentTask?.child.push(new Task(child.id, child.name, child.child))
-            } else {
-                this.robot.child.push(new Task(child.id, child.name, child.child))
-            }
-        }
-
         movingConnection(val: any) {
-            const me = this
 
             if (this.relations.length < 1) {
                 return;
@@ -875,7 +763,6 @@
 
         }
         reconnectLine() {
-            const me = this
             const startEv = this.elements.find((el: any) => el.name == 'Start')
             const endEv = this.elements.find((el: any) => el.name == 'End')
 
@@ -903,7 +790,6 @@
             }
         }
         addControlConnection(element: any) {
-            const me = this
             this.deleteConnection(element.id)
 
             if (this.lappedElement.controlType == 'If') {
@@ -995,6 +881,19 @@
             }
 
             parent.conditions.push(condition)
+        }
+
+        updateTasks(parent: any, child: any) {
+            if(child.endControl) {
+                return
+            }
+            this.robot.child = this.robot.child.filter((task: any) => task.id != child.id)
+            var parentTask = this.robot.child.find((task: any) => task.id == parent.id)
+            if(parentTask) {
+                parentTask?.child.push(new Keyword(child.id, child.name, child.child))
+            } else {
+                this.robot.child.push(new Keyword(child.id, child.name, child.child))
+            }
         }
 
         overlappedLine(line: any, shape: any) {
@@ -1108,6 +1007,15 @@
         }
         openScriptPanel() {
             this.isOpenScript = true
+        }
+        openVariableDialog() {
+            this.variableDialog = true
+        }
+        closeVariableDialog() {
+            this.variableDialog = false
+        }
+        updateVariables(variables: any) {
+            this.robot.setProperty({ 'variables': variables });
         }
     }
 

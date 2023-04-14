@@ -2,61 +2,52 @@
     <div>
         <v-card class="tools" max-width="100">
             <div v-for="item in elementTypes" :key="item.name">
-                <div v-if="item.component.includes('Event')"
-                        class="tool-item"
-                        draggable="true"
-                        @dragend="addEvent($event, item)"
-                >
-                    <v-icon>{{ item.icon }}</v-icon>
-                </div>
-                <div v-else
-                        class="tool-item"
-                        @click="openKeywordDialog($event, item.name)"
-                >
-                    <v-icon>{{ item.icon }}</v-icon>
+                <div class="tool-item" @click="openTypeDialog(item.name)">
+                    {{ item.name }}
                 </div>
             </div>
         </v-card>
 
-        <v-card v-if="keywordDialog"
+        <v-card v-if="typeDialog"
                 class="keyword-dialog"
-                max-width="500"
-                overflow
         >
-            <div v-if="elementType.includes('Control')">
+            <div v-if="openType.includes('Control')">
                 <v-list>
-                    <v-list-item-group>
+                    <draggable
+                        :list="controlList"
+                        :group="{ name: 'task', pull: 'clone', put: false }"
+                        :clone="cloneElement"
+                    >
                         <v-list-item
-                                v-for="(item, index) in controlList"
-                                :key="index"
+                                v-for="ctrl in controlList" 
+                                :key="ctrl.name"
                         >
-                            <v-list-item-title
-                                    draggable="true"
-                                    @dragend="addControl($event, item)"
-                            >
-                                {{ item }}
+                            <v-list-item-title>
+                                {{ ctrl.name }}
                             </v-list-item-title>
                         </v-list-item>
-                    </v-list-item-group>
+                    </draggable>
                 </v-list>
             </div>
-            <div v-if="elementType.includes('Keyword')">
+            <div v-if="openType.includes('Keyword')">
                 <v-treeview 
-                        :items="keywordList"
-                        item-key="keywordType"
+                        :items="keywords"
+                        item-key="name"
                         item-children="list"
                         open-on-click
                 >
                     <template v-slot:label="{ item }">
-                        <div v-if="typeof item == 'string'"
-                                draggable="true"
-                                @dragend="addKeyword($event, item)"
+                        <div v-if="item.list">
+                            {{ item.name }}
+                        </div>
+                        <draggable
+                                v-else
+                                :list="[ { name: item.name, type: openType } ]"
+                                :group="{ name: 'task', pull: 'clone', put: false }"
+                                :clone="cloneElement"
                         >
-                            {{ item }}
-                        </div>
-                        <div v-else>
-                            {{ item.keywordType }}
-                        </div>
+                            <div>{{ item.name }}</div>
+                        </draggable>
                     </template>
                 </v-treeview>
             </div>
@@ -65,11 +56,17 @@
 </template>
 
 <script lang="ts">
-    import { Vue, Component, Prop, Watch } from "vue-property-decorator"
+    import Draggable from "vuedraggable";
+    import { Vue, Component } from "vue-property-decorator"
+    import { Keyword } from "@/types/Task";
 
-    @Component
+    @Component({
+        components: {
+            Draggable,
+        }
+    })
+    
     export default class ElementList extends Vue {
-        @Prop() elementTypes!: any[]
 
         mounted() {
             const builtInList = {
@@ -96,54 +93,60 @@
             const control = Vue.prototype.$controlList
             control.forEach((ctrl: string) => {
                 if(!ctrl.includes('Relation')) {
-                    ctrl = ctrl.replaceAll(' Task', '')
-                    this.controlList.push(ctrl)
+                    this.controlList.push({
+                        name: ctrl.replaceAll(' Task', ''), 
+                        type: ctrl.replaceAll(' Task', '')
+                    })
                 }
             })
         }
+
         // data
-        public elementType: string = ''
-        public x: number = 0
-        public y: number = 0
-        public keywordDialog: boolean = false
-        public keywordTab: any = null
-        public controlList: any[] = []
-        public keywordList: any[] = []
+        elementTypes: any[] = [
+            {
+                name: 'Control',
+                type: null,
+            },
+            {
+                name: 'Keyword',
+                type: Keyword,
+            },
+        ]
+        openType: string = ''
+        typeDialog: boolean = false
+        controlList: any[] = []
+        keywordList: any[] = []
 
+        // computed
         get keywords() {
-            if (this.keywordTab != null) {
-                return this.keywordList[this.keywordTab].list
-            } else {
-                return []
-            }
+            var list: any[] = []
+            this.keywordList.forEach((type: any) => {
+                var keyList: any[] = []
+                type.list.forEach((keyword: string) => {
+                    keyList.push({
+                        name: keyword
+                    })
+                })
+                list.push({
+                    type: Keyword,
+                    name: type.keywordType,
+                    list: keyList
+                })
+            })
+            return list
         }
 
-        openKeywordDialog(event: any, type: string) {
-            event.preventDefault()
-            this.keywordDialog = true
-            this.elementType = type
-            this.x = event.clientX
-            this.y = event.clientY
+        // method
+        openTypeDialog(type: string) {
+            this.typeDialog = true
+            this.openType = type
         }
-        closeKeywordDialog() {
-            this.keywordDialog = false
+        closeTypeDialog() {
+            this.typeDialog = false
         }
-
-        addEvent(event: any, value: any) {
-            this.$emit('addElement', event, value, value.name)
-            this.keywordDialog = false
-        }
-
-        addControl(event: any, value: any) {
-            const componentInfo = this.elementTypes.find((item) => item.name.includes('Control'))
-            this.$emit('addElement', event, componentInfo, value)
-            this.keywordDialog = false
-        }
-
-        addKeyword(event: any, value: any) {
-            const componentInfo = this.elementTypes.find((item) => item.name.includes('Task'))
-            this.$emit('addElement', event, componentInfo, value.name)
-            this.keywordDialog = false
+        cloneElement(type: any) {
+            this.$emit('cloneElement', type)
+            this.closeTypeDialog()
         }
     }
 </script>
@@ -176,6 +179,10 @@
         position: absolute !important;
         left: 125px;
         top: 200px;
+        overflow-y: auto;
+        min-width: 200px;
+        max-width: 500px;
+        max-height: 450px;
         box-shadow: 0 3px 1px -2px rgb(0 0 0 / 20%), 
                     0 2px 2px 0 rgb(0 0 0 / 14%), 
                     0 1px 5px 0 rgb(0 0 0 / 40%) !important;

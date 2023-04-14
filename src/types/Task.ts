@@ -13,9 +13,10 @@ class Construct{
 
 class Task extends Construct{
 
-    constructor(private id: number, name: string, public child: Array<Task> = []){
+    constructor(private id: any, name: string, public type: string, public child: Array<Task> = []){
         super(name);
         this.id = id;
+        this.type = type;
         this.child = child;
     }
 
@@ -23,28 +24,28 @@ class Task extends Construct{
         this.name = name
     }
 
-    public delChild(delList: any, child: any) {
-        delList.forEach((id: string) => {
-            let delTask
-            delTask = child.find((obj: any) => obj.id == id)
-            if (delTask != null) {
-                child = child.filter((obj: any) => obj.id != id)
-            } else {
-                child.forEach((obj: any) => {
-                    obj.child = this.delChild([id], obj.child)
-                })
-            }
-        })
-        return child
+    public delChild(id: any, child: any) {
+        let delTask, filterChild
+        delTask = child.find((obj: any) => obj.id == id)
+        if (delTask != null) {
+            filterChild = child.filter((obj: any) => obj.id != id)
+        } else {
+            child.forEach((obj: any) => {
+                obj.child = this.delChild(id, obj.child)
+            })
+        }
+        return filterChild
     }
 
     public findChildTask(id: any, child: any) {
         let childTask
-        childTask = child.find((obj: any) => obj.id == id)
-        if (childTask == null) {
-            child.forEach((obj: any) => {
-                childTask = this.findChildTask(id, obj.child)
-            })
+        if(child.length > 0) {
+            childTask = child.find((obj: any) => obj.id == id)
+            if (childTask == null) {
+                child.forEach((obj: any) => {
+                    childTask = this.findChildTask(id, obj.child)
+                })
+            }
         }
         return childTask
     }
@@ -52,12 +53,6 @@ class Task extends Construct{
     public setProperty(value: any) {
     }
 
-    public alignChild(child: any) {
-        let newChild = child.sort((a: any, b: any) => {
-            return a.x - b.x
-        })
-        return newChild
-    }
 
     public clone():any {
 
@@ -101,8 +96,7 @@ class CallKeyword extends Construct{
      
 }
 
-class SeqTask extends Task{
-
+class SeqTask extends Task {
 
     public toRobot(tab: number): string{
 
@@ -145,7 +139,13 @@ class ForTask extends SeqTask{
 
 class IfTask extends SeqTask{
 
-    public conditions: any[] = []
+    public conditions: any[] = [
+        {
+            type: '',
+            variable: '',
+            keywords: [ '' ]
+        }
+    ];
 
     public setProperty(value: any) {
         this.conditions = value.conditions
@@ -156,44 +156,49 @@ class IfTask extends SeqTask{
 
         let robot = Construct.tabs.substr(0, tab) + `${name}` + Construct.tabs.substr(0, tab);
 
-        if (this.conditions.length > 0) {
-            let ifCondition = this.conditions.find((obj) => obj.type == 'If')
-            if(!ifCondition) { 
-                robot += Construct.tabs.substr(0, tab)+"END";
-                return robot
-            }
-            if(ifCondition.operator) {
-                robot += ifCondition.variable + ' ' + ifCondition.operator + ifCondition.compareVariable+ ' ' +'\n'
-            } else {
-                robot += ifCondition.variable + '\n'
-            }
-            ifCondition.keywords?.forEach((keyword: string)=> robot += Construct.tabs.substr(0, tab+1) + keyword + '\n')
+        this.child?.forEach(child=> robot += "\n"+child.toRobot(tab + 1));
 
-            let elseifCondition = this.conditions.filter((obj) => obj.type == 'Else If')
-            if(!elseifCondition) {
-                robot += Construct.tabs.substr(0, tab)+"END";
-                return robot
-            }
-            elseifCondition?.forEach((condition: any)=> {
-                robot += Construct.tabs.substr(0, tab) + condition.type + Construct.tabs.substr(0, tab+1)
-                if(condition.operator) {
-                    robot += condition.variable + ' ' + condition.operator + condition.compareVariable+ ' ' +'\n'
-                } else {
-                    robot += condition.variable + '\n'
-                }
-                condition.keywords?.forEach((keyword: string)=> robot += Construct.tabs.substr(0, tab+1) + keyword + '\n')
-            })
+        robot += "\n"+Construct.tabs.substr(0, tab)+"END";
 
-            let elseCondition = this.conditions.find((obj) => obj.type == 'Else')
-            if(!elseCondition) {
-                robot += Construct.tabs.substr(0, tab)+"END";
-                return robot
-            }
-            robot += Construct.tabs.substr(0, tab) + elseCondition.type + '\n'
-            elseCondition.keywords?.forEach((keyword: string)=> robot += Construct.tabs.substr(0, tab+1) + keyword + '\n')
+
+        // if (this.conditions.length > 0) {
+        //     let ifCondition = this.conditions.find((obj) => obj.type == 'If')
+        //     if(!ifCondition) { 
+        //         robot += Construct.tabs.substr(0, tab)+"END";
+        //         return robot
+        //     }
+        //     if(ifCondition.operator) {
+        //         robot += ifCondition.variable + ' ' + ifCondition.operator + ifCondition.compareVariable+ ' ' +'\n'
+        //     } else {
+        //         robot += ifCondition.variable + '\n'
+        //     }
+        //     ifCondition.keywords?.forEach((keyword: string)=> robot += Construct.tabs.substr(0, tab+1) + keyword + '\n')
+
+        //     let elseifCondition = this.conditions.filter((obj) => obj.type == 'Else If')
+        //     if(!elseifCondition) {
+        //         robot += Construct.tabs.substr(0, tab)+"END";
+        //         return robot
+        //     }
+        //     elseifCondition?.forEach((condition: any)=> {
+        //         robot += Construct.tabs.substr(0, tab) + condition.type + Construct.tabs.substr(0, tab+1)
+        //         if(condition.operator) {
+        //             robot += condition.variable + ' ' + condition.operator + condition.compareVariable+ ' ' +'\n'
+        //         } else {
+        //             robot += condition.variable + '\n'
+        //         }
+        //         condition.keywords?.forEach((keyword: string)=> robot += Construct.tabs.substr(0, tab+1) + keyword + '\n')
+        //     })
+
+        //     let elseCondition = this.conditions.find((obj) => obj.type == 'Else')
+        //     if(!elseCondition) {
+        //         robot += Construct.tabs.substr(0, tab)+"END";
+        //         return robot
+        //     }
+        //     robot += Construct.tabs.substr(0, tab) + elseCondition.type + '\n'
+        //     elseCondition.keywords?.forEach((keyword: string)=> robot += Construct.tabs.substr(0, tab+1) + keyword + '\n')
             
-            robot += Construct.tabs.substr(0, tab) + "END"
-        }
+        //     robot += Construct.tabs.substr(0, tab) + "END"
+        // }
         
         return robot; 
     }
@@ -202,7 +207,11 @@ class IfTask extends SeqTask{
 
 class WhileTask extends SeqTask{
 
-    public condition: any = null
+    public condition: any = {
+        type: '',
+        variable: '',
+        keywords: [ '' ]
+    };
     public limit: string = "";
 
     public setProperty(value: any) {
@@ -235,8 +244,20 @@ class WhileTask extends SeqTask{
 
 class Robot extends SeqTask{
 
-    private variables: Variable[] = [];
+    public variables: Variable[] = [];
     public keywords: Keyword[] = [];
+
+    public setProperty(value: any) {
+        if (value.variables) {
+            this.variables = value.variables
+        }
+
+        if (value.keywords) {
+            let newKeywords = this.keywords
+            newKeywords = newKeywords.concat(value.keywords)
+            this.keywords = newKeywords
+        }
+    }
 
 
     public toRobot(tab: number): string{
@@ -246,13 +267,15 @@ class Robot extends SeqTask{
             variable => robot += variable.toRobot(tab+1)
         );
 
-        robot+="*** Tasks ****\n";
+        robot+="\n*** Tasks ****\n";
 
         robot+=super.toRobot(tab) + "\n";
 
-        robot+="*** Keywords ****\n";
+        robot+="\n*** Keywords ****\n";
 
         this.keywords.forEach(keyword => robot += keyword.toRobot(tab));
+
+        robot+="\n";
 
         return robot;
     }
@@ -266,10 +289,23 @@ class Variable extends Construct{
         this.defaultValue = defaultValue;
     }
 
+    public toRobot(tab: number): string{
+
+        let robot = "${" + `${this.name}` + "}" + Construct.tabs.substr(0, tab+3) + `${this.defaultValue}\n`
+
+        return robot; 
+    }
 }
 
 class Keyword extends SeqTask{
 
+    public toRobot(tab: number): string{
+
+        let robot = Construct.tabs.substr(0, tab) + `${this.name}`
+
+        return robot; 
+    }
+
 }
 
-export{Robot, Task, SeqTask, ForTask, IfTask, WhileTask, Keyword, CallKeyword}
+export{Robot, Task, SeqTask, ForTask, IfTask, WhileTask, Keyword, CallKeyword, Variable}
