@@ -42,11 +42,11 @@
   
       <rawDisplayer class="col-3" :value="list2" title="List 2" /> -->
     </div>
-  </template>
+</template>
   
-  <script lang="ts">
+<script lang="ts">
   import Draggable from "vuedraggable";
-  import NestedTask from "./infra/NestedTask.vue";
+  import NestedTask from "./NestedTask.vue";
   import {Robot, SeqTask, Task, IfTask, ForTask, Keyword, CallKeyword} from "@/types/Task";
   
   import { Watch, Component, Vue } from "vue-property-decorator";
@@ -91,7 +91,7 @@ export default class RobotDesigner extends Vue {
     }
     
   }
+</script>
 
-  </script>
-  <style scoped></style>
+<style scoped></style>
   

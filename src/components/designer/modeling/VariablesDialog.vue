@@ -12,7 +12,7 @@
                         open-on-click
                 ></v-treeview>
                 <v-treeview
-                        :items="getVariables"
+                        :items="variables"
                         item-key="name"
                         item-children="list"
                         open-on-click
@@ -64,7 +64,7 @@
                         Cancel
                     </v-btn>
                     <v-btn color="primary" outlined
-                            @click="updateVariable(newVariable, editVarIndex)"
+                            @click="updateVariable(editVarIndex)"
                     >
                         {{ isNewVar ? 'Add' : 'Edit' }}
                     </v-btn>
@@ -75,120 +75,62 @@
 </template>
 
 <script lang="ts">
-    import { Vue, Component, Prop, Watch } from "vue-property-decorator"
-    import { Variable } from "@/types/Task";
+    import { Vue, Component, Prop } from "vue-property-decorator"
+    import { Variable } from  "@/types/Task";
+    import { Variables } from  "@/types/Variables";
     
     @Component
     export default class VariablesDialog extends Vue {
-        @Prop() variables!: any[]
+        @Prop() value!: any
 
-        public globalVariables: any[] = [
-            {
-                name: 'Global',
-                list: [
-                    {
-                        name: 'CURDIR'
-                    },
-                    {
-                        name: 'EXECDIR'
-                    },
-                    {
-                        name: 'TEMPDIR'
-                    },
-                    {
-                        name: 'TRUE'
-                    },
-                    {
-                        name: 'FALSE'
-                    },
-                    {
-                        name: 'NONE'
-                    },
-                    {
-                        name: 'NULL'
-                    },
-                    {
-                        name: 'SPACE'
-                    },
-                    {
-                        name: 'EMPTY'
-                    },
-                    {
-                        name: 'SUITE NAME'
-                    },
-                    {
-                        name: 'SUITE SOURCE'
-                    },
-                    {
-                        name: 'SUITE DOCUMENTATION'
-                    },
-                    {
-                        name: 'SUITE METADATA'
-                    },
-                    {
-                        name: 'SUITE STATUS'
-                    },
-                    {
-                        name: 'SUITE MESSAGE'
-                    },
-                    {
-                        name: 'KEYWORD STATUS'
-                    },
-                    {
-                        name: 'KEYWORD MESSAGE'
-                    },
-                    {
-                        name: 'LOG LEVEL'
-                    },
-                    {
-                        name: 'LOG FILE'
-                    },
-                    {
-                        name: 'OUTPUT DIR'
-                    },
-                    {
-                        name: 'OUTPUT FILE'
-                    },
-                    {
-                        name: 'ROBOT_ROOT'
-                    },
-                    {
-                        name: 'ROBOT_ARTIFACTS'
-                    },
-                ]
-            },
-        ]
+        // Data
+        public varList: Variables = new Variables()
+        // public variables: any[] = [{ name: 'Suite', list: [] }]
+        public globalVariables: any[] = [{ name: 'Global', list: [] }]
         public variableForm: boolean = false
         public newVariable: any = {
             name: '',
-            type: '',
-            value: '',
+            defaultValue: '',
         }
         public isNewVar: boolean = true
         public editVarIndex: number = -1
 
-        get getVariables() {
-            var list = [
-                {
-                    name: 'Suite',
-                    list: this.variables
-                }
-            ]
+        // Mounted
+        mounted() {
+            this.varList.getGlobalVariables().forEach((item: string) => {
+                this.globalVariables[0].list.push({
+                    name: item
+                })
+            })
+            
+        }
+
+        get variables() {
+            var list: any[] = [{ name: 'Suite', list: [] }]
+            if (this.value.variables.length > 0) {
+                this.value.variables.forEach((item: any) => {
+                    list[0].list.push(item)
+                })
+            }
             return list
         }
 
+        // Methods
         openVariableForm() {
             this.variableForm = true
         }
 
-        updateVariable(variable: any, index: number) {
+        updateVariable(index: number) {
             if (this.isNewVar) {
-                this.variables.push(new Variable(variable.name, variable.defaultValue))
+                this.value.variables.push(
+                    new Variable(this.newVariable.name, this.newVariable.defaultValue)
+                )
             } else {
                 if(index >= 0) {
-                    this.variables[index] = variable
+                    this.value.variables[index] = this.newVariable
                 }
-            }            
+            }
+
             this.newVariable = {
                 name: '',
                 defaultValue: '',
@@ -205,12 +147,12 @@
         }
 
         deleteVariable(variable: any) {
-            var newVars = this.variables.filter((vars: any) => vars.name != variable.name)
-            this.$emit('updateVariables', newVars)
+            var newVars = this.value.variables.filter((vars: any) => vars.name != variable.name)
+            this.value.variables = newVars
         }
     }
 </script>
 
-<style>
+<style scoped>
 
 </style>

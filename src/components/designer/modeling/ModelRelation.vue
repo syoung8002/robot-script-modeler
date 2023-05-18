@@ -1,79 +1,70 @@
 <template>
-    <div>
-        <v-shape 
-                :config="{
-                    name: config.name,
-                    points: config.points,
-                    sceneFunc: (context, shape) => {
-                        const RADIUS = 20;
-                        const width = config.points[1].x - config.points[0].x;
-                        const height = config.points[1].y - config.points[0].y;
-                        const yDir = Math.sign(height);
-                        const xDir = Math.sign(width);
-                        const radius = Math.min(
-                            RADIUS,
-                            Math.abs(height / 2),
-                            Math.abs(width / 2)
-                        );
-
-                        context.beginPath();
-                        context.moveTo(config.points[0].x, config.points[0].y);
-                        context.lineTo(config.points[0].x + width / 2 - RADIUS * xDir, config.points[0].y);
-                        context.quadraticCurveTo(
-                            config.points[0].x + width / 2,
-                            config.points[0].y,
-                            config.points[0].x + width / 2,
-                            config.points[0].y + yDir * radius
-                        );
-                        context.lineTo(config.points[0].x + width / 2, config.points[1].y - yDir * radius);
-                        context.quadraticCurveTo(
-                            config.points[0].x + width / 2,
-                            config.points[1].y,
-                            config.points[0].x + width / 2 + radius * xDir,
-                            config.points[1].y
-                        );
-                        context.lineTo(config.points[1].x, config.points[1].y);
-                        context.fillStrokeShape(shape);
-                    },
-                    stroke: config.stroke,
-                    strokeWidth: config.strokeWidth,
-                }"
-        ></v-shape>
-        <v-shape
-                :config="{
-                    name: 'relation-arrow',
-                    points: config.points,
-                    sceneFunc: (context, shape) => {
-                        const width = config.points[1].x - config.points[0].x;
-                        const height = config.points[1].y - config.points[0].y;
-                        const yDir = Math.sign(height);
-                        const xDir = Math.sign(width);
-
-                        context.beginPath();
-                        context.moveTo(config.points[1].x, config.points[1].y);
-                        context.lineTo(config.points[1].x - (10 * xDir), config.points[1].y - 4);
-                        context.quadraticCurveTo(
-                            config.points[1].x - (10 * xDir), 
-                            config.points[1].y + 4, 
-                            config.points[1].x - (10 * xDir), 
-                            config.points[1].y + 4
-                        );
-                        context.closePath();
-
-                        context.fillStrokeShape(shape);
-                    },
-                    fill: config.stroke,
-                    stroke: config.stroke,
-                }"
-        ></v-shape>
+    <div class="my-1">
+        <div v-if="!targetType.includes('If') || 
+                (targetType.includes('If') && targetTask.conditions.length == 1)"
+        >
+            <v-icon>mdi-arrow-down</v-icon>
+        </div>
+        <div v-else>
+            <v-divider 
+                    class="if-relation mx-auto"
+                    :style="'width:' + lineWidth + 'px'"
+            ></v-divider>
+            <div class="d-flex">
+                <div v-for="(item, idx) in targetTask.conditions" 
+                        :key="item.type+idx"
+                        class="mx-auto"
+                        :class="'condition_arrow_'+targetTask.id"
+                >
+                    <v-icon>mdi-arrow-down</v-icon>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script lang="ts">
-    import { Component, Vue, Prop } from "vue-property-decorator"
+    import { Component, Vue, Prop, Watch } from "vue-property-decorator"
 
     @Component
     export default class ModelRelation extends Vue {
-        @Prop() config!: { type: object }
+        @Prop() targetTask!: any
+
+        lineWidth: any = null
+
+        mounted() {
+
+        }
+
+        get targetType() {
+            return this.targetTask.type
+        }
+
+        @Watch("targetTask.conditions", {immediate: true, deep: true})
+        setLineWidth() {
+            if (this.targetTask.type.includes('If')) {
+                this.$nextTick(() => {
+                    var arrows = document.querySelectorAll('.condition_arrow_' + this.targetTask.id)
+                    var xList: any[] = []
+                    arrows.forEach((arrow: any) => {
+                        xList.push(arrow.getBoundingClientRect().x)
+                    })
+                    
+                    var minX = Math.min(...xList)
+                    var maxX = Math.max(...xList)
+
+                    this.lineWidth = maxX - minX
+                })
+            }
+        }
+
     }
 </script>
+
+<style scoped>
+    .if-relation{
+        border: rgba(0,0,0,.54) solid 1px;
+        margin-top: 16px;
+        margin-bottom: -6px;
+    }
+</style>

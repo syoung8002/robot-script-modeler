@@ -1,4 +1,4 @@
-# vue-konva-canvas
+# robot-script-modeler
 
 ## Project setup
 ```

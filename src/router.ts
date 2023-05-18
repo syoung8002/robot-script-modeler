@@ -4,15 +4,10 @@ import VueRouter, { RouteConfig } from "vue-router";
 Vue.use(VueRouter)
 
 const routes: Array<RouteConfig> = [
-    // {
-    //   path: "/",
-    //   name: "ModelCanvas",
-    //   component: () => import("./components/ModelCanvas.vue")
-    // },
     {
       path: "/",
-      name: "RobotModelDesigner",
-      component: () => import("./components/RobotModelDesigner.vue")
+      name: "ModelCanvas",
+      component: () => import("./components/designer/ModelCanvas.vue")
     },
     {
       path: "/robot",
